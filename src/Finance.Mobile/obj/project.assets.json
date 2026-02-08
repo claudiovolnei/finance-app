@@ -40321,6 +40321,7 @@
     "net10.0-android36.0": [
       "Finance.Domain >= 1.0.0",
       "Microsoft.AspNetCore.Components.WebView.Maui >= 10.0.0",
+      "Microsoft.Extensions.Configuration.Json >= 10.0.0",
       "Microsoft.Extensions.Http >= 10.0.0",
       "Microsoft.Extensions.Logging.Debug >= 10.0.0",
       "Microsoft.Maui.Controls >= 10.0.0",
@@ -40330,6 +40331,7 @@
     "net10.0-ios26.0": [
       "Finance.Domain >= 1.0.0",
       "Microsoft.AspNetCore.Components.WebView.Maui >= 10.0.0",
+      "Microsoft.Extensions.Configuration.Json >= 10.0.0",
       "Microsoft.Extensions.Http >= 10.0.0",
       "Microsoft.Extensions.Logging.Debug >= 10.0.0",
       "Microsoft.Maui.Controls >= 10.0.0",
@@ -40339,6 +40341,7 @@
     "net10.0-maccatalyst26.0": [
       "Finance.Domain >= 1.0.0",
       "Microsoft.AspNetCore.Components.WebView.Maui >= 10.0.0",
+      "Microsoft.Extensions.Configuration.Json >= 10.0.0",
       "Microsoft.Extensions.Http >= 10.0.0",
       "Microsoft.Extensions.Logging.Debug >= 10.0.0",
       "Microsoft.Maui.Controls >= 10.0.0",
@@ -40348,6 +40351,7 @@
     "net10.0-windows10.0.19041": [
       "Finance.Domain >= 1.0.0",
       "Microsoft.AspNetCore.Components.WebView.Maui >= 10.0.0",
+      "Microsoft.Extensions.Configuration.Json >= 10.0.0",
       "Microsoft.Extensions.Http >= 10.0.0",
       "Microsoft.Extensions.Logging.Debug >= 10.0.0",
       "Microsoft.Maui.Controls >= 10.0.0",
@@ -40440,6 +40444,10 @@
         "targetAlias": "net10.0-android",
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebView.Maui": {
+            "target": "Package",
+            "version": "[10.0.0, )"
+          },
+          "Microsoft.Extensions.Configuration.Json": {
             "target": "Package",
             "version": "[10.0.0, )"
           },
@@ -40771,6 +40779,10 @@
             "target": "Package",
             "version": "[10.0.0, )"
           },
+          "Microsoft.Extensions.Configuration.Json": {
+            "target": "Package",
+            "version": "[10.0.0, )"
+          },
           "Microsoft.Extensions.Http": {
             "target": "Package",
             "version": "[10.0.0, )"
@@ -41096,6 +41108,10 @@
         "targetAlias": "net10.0-maccatalyst",
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebView.Maui": {
+            "target": "Package",
+            "version": "[10.0.0, )"
+          },
+          "Microsoft.Extensions.Configuration.Json": {
             "target": "Package",
             "version": "[10.0.0, )"
           },
@@ -41425,6 +41441,10 @@
         "targetAlias": "net10.0-windows10.0.19041.0",
         "dependencies": {
           "Microsoft.AspNetCore.Components.WebView.Maui": {
+            "target": "Package",
+            "version": "[10.0.0, )"
+          },
+          "Microsoft.Extensions.Configuration.Json": {
             "target": "Package",
             "version": "[10.0.0, )"
           },

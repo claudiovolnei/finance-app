@@ -1,20 +1,42 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build",
-            "command": "dotnet",
-            "type": "process",
-            "args": [
-                "build",
-                "${workspaceFolder}/src/Finance.Mobile/Finance.Mobile.csproj",
-                "-c",
-                "Debug",
-                "-f",
-                "net10.0-windows10.0.19041.0"
-            ],
-            "problemMatcher": "$msCompile",
-            "group": "build"
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/src/Finance.Mobile/Finance.Mobile.csproj",
+        "-c",
+        "Debug",
+        "-f",
+        "net10.0-windows10.0.19041.0"
+      ],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "rebuild",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "clean",
+        "${workspaceFolder}/src/Finance.Mobile/Finance.Mobile.csproj",
+        "-c",
+        "Debug",
+        "-f",
+        "net10.0-windows10.0.19041.0"
+      ],
+      "problemMatcher": "$msCompile",
+      "presentation": { "reveal": "silent" }
+    },
+    {
+      "label": "clean and build",
+      "dependsOrder": "sequence",
+      "dependsOn": ["rebuild", "build"],
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
 }

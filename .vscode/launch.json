@@ -1,16 +1,30 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug Windows",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/Finance.Mobile/bin/Debug/net10.0-windows10.0.19041.0/win-x64/Finance.Mobile.exe",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/Finance.Mobile/bin/Debug/net10.0-windows10.0.19041.0/win-x64",
-            "stopAtEntry": false,
-            "console": "internalConsole"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Windows",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/src/Finance.Mobile/Finance.Mobile.csproj",
+        "-c",
+        "Debug",
+        "-f",
+        "net10.0-windows10.0.19041.0",
+        "--no-build"
+      ],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Attach to Finance.Mobile",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
 }

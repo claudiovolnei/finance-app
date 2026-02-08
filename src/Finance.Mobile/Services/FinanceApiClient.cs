@@ -6,22 +6,26 @@ namespace Finance.Mobile.Services;
 public class FinanceApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly ApiBaseUrl _baseUrl;
 
-    public FinanceApiClient(HttpClient httpClient)
+    public FinanceApiClient(HttpClient httpClient, ApiBaseUrl baseUrl)
     {
         _httpClient = httpClient;
+        _baseUrl = baseUrl;
     }
+
+    private string Url(string path) => _baseUrl.GetAbsoluteUrl(path);
 
     // ========== TRANSACTIONS ==========
     public async Task<List<Transaction>> GetTransactionsAsync()
     {
-        var transactions = await _httpClient.GetFromJsonAsync<List<Transaction>>("/transactions");
+        var transactions = await _httpClient.GetFromJsonAsync<List<Transaction>>(Url("transactions"));
         return transactions ?? new List<Transaction>();
     }
 
     public async Task<Transaction?> GetTransactionByIdAsync(Guid id)
     {
-        return await _httpClient.GetFromJsonAsync<Transaction>($"/transactions/{id}");
+        return await _httpClient.GetFromJsonAsync<Transaction>(Url($"transactions/{id}"));
     }
 
     public async Task CreateTransactionAsync(
@@ -40,7 +44,7 @@ public class FinanceApiClient
             description,
             type);
 
-        var response = await _httpClient.PostAsJsonAsync("/transactions", request);
+        var response = await _httpClient.PostAsJsonAsync(Url("transactions"), request);
         response.EnsureSuccessStatusCode();
     }
 
@@ -61,32 +65,32 @@ public class FinanceApiClient
             description,
             type);
 
-        var response = await _httpClient.PutAsJsonAsync($"/transactions/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync(Url($"transactions/{id}"), request);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteTransactionAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"/transactions/{id}");
+        var response = await _httpClient.DeleteAsync(Url($"transactions/{id}"));
         response.EnsureSuccessStatusCode();
     }
 
     // ========== CATEGORIES ==========
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var categories = await _httpClient.GetFromJsonAsync<List<Category>>("/categories");
+        var categories = await _httpClient.GetFromJsonAsync<List<Category>>(Url("categories"));
         return categories ?? new List<Category>();
     }
 
     public async Task<Category?> GetCategoryByIdAsync(Guid id)
     {
-        return await _httpClient.GetFromJsonAsync<Category>($"/categories/{id}");
+        return await _httpClient.GetFromJsonAsync<Category>(Url($"categories/{id}"));
     }
 
     public async Task<Category> CreateCategoryAsync(string name)
     {
         var request = new CreateCategoryRequest(name);
-        var response = await _httpClient.PostAsJsonAsync("/categories", request);
+        var response = await _httpClient.PostAsJsonAsync(Url("categories"), request);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Category>() ?? throw new Exception("Failed to create category");
     }
@@ -94,26 +98,26 @@ public class FinanceApiClient
     public async Task UpdateCategoryAsync(Guid id, string name)
     {
         var request = new UpdateCategoryRequest(name);
-        var response = await _httpClient.PutAsJsonAsync($"/categories/{id}", request);
+        var response = await _httpClient.PutAsJsonAsync(Url($"categories/{id}"), request);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteCategoryAsync(Guid id)
     {
-        var response = await _httpClient.DeleteAsync($"/categories/{id}");
+        var response = await _httpClient.DeleteAsync(Url($"categories/{id}"));
         response.EnsureSuccessStatusCode();
     }
 
     // ========== ACCOUNTS ==========
     public async Task<List<Account>> GetAccountsAsync()
     {
-        var accounts = await _httpClient.GetFromJsonAsync<List<Account>>("/accounts");
+        var accounts = await _httpClient.GetFromJsonAsync<List<Account>>(Url("accounts"));
         return accounts ?? new List<Account>();
     }
 
     public async Task<Account?> GetAccountByIdAsync(Guid id)
     {
-        return await _httpClient.GetFromJsonAsync<Account>($"/accounts/{id}");
+        return await _httpClient.GetFromJsonAsync<Account>(Url($"accounts/{id}"));
     }
 
     // Request DTOs

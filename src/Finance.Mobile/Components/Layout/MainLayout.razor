@@ -1,29 +1,31 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 @using MudBlazor
 
-<MudThemeProvider />
+<MudThemeProvider Theme="_theme" />
 <MudDialogProvider />
 <MudSnackbarProvider />
+<MudBreakpointProvider>
+    <MudLayout Class="mud-layout-full-height">
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="DrawerToggle" />
+            <MudText Typo="Typo.h6" Class="ml-3">Finance App</MudText>
+        </MudAppBar>
 
-<MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h6" Class="ml-3">Finance App</MudText>
-    </MudAppBar>
+        <MudDrawer @bind-Open="_drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Sm">
+            <NavMenu />
+        </MudDrawer>
 
-    <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
-        <NavMenu />
-    </MudDrawer>
-
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-            @Body
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+        <MudMainContent Class="mud-main-content-full">
+            <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 pb-4">
+                @Body
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+</MudBreakpointProvider>
 
 @code {
     private bool _drawerOpen = true;
+    private MudTheme _theme = new MudTheme();
 
     private void DrawerToggle()
     {

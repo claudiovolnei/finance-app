@@ -2,7 +2,8 @@ namespace Finance.Mobile.Services;
 
 public static class ApiConfiguration
 {
-    public static string GetBaseUrl()
+    /// <summary>URL padrão do backend por plataforma (usada quando appsettings não define Api:BaseUrl).</summary>
+    public static string GetDefaultBaseUrl()
     {
         if (DeviceInfo.Platform == DevicePlatform.Android)
             return "http://10.0.2.2:5102";
