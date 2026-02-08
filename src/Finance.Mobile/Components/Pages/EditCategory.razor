@@ -1,0 +1,120 @@
+@page "/categories/edit/{Id}"
+@using MudBlazor
+@using Finance.Domain.Entities
+@using Finance.Mobile.Services
+@inject FinanceApiClient ApiClient
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Editar Categoria</MudText>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+    }
+    else if (_category == null)
+    {
+        <MudAlert Severity="Severity.Error">Categoria não encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudForm>
+            <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
+
+            <MudButtonGroup Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+                    @if (_saving)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Salvando...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Salvar</MudText>
+                    }
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
+            </MudButtonGroup>
+        </MudForm>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private Category? _category;
+    private string _name = "";
+    private string _message = "";
+    private Severity _alertSeverity = Severity.Info;
+    private bool _loading = true;
+    private bool _saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategory();
+    }
+
+    private async Task LoadCategory()
+    {
+        try
+        {
+            _loading = true;
+            _category = await ApiClient.GetCategoryByIdAsync(Id);
+
+            if (_category != null)
+            {
+                _name = _category.Name;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar categoria: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Salvar()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _message = "Informe o nome da categoria";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await ApiClient.UpdateCategoryAsync(Id, _name);
+
+            _message = "Categoria atualizada com sucesso!";
+            _alertSeverity = Severity.Success;
+            
+            await Task.Delay(1000);
+            Navigation.NavigateTo("/categories");
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao atualizar categoria: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/categories");
+    }
+}

@@ -1,11 +1,30 @@
 {
   "version": 3,
   "targets": {
-    "net10.0": {}
+    "net10.0": {
+      "Finance.Domain/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v10.0",
+        "compile": {
+          "bin/placeholder/Finance.Domain.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Finance.Domain.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "Finance.Domain/1.0.0": {
+      "type": "project",
+      "path": "../Finance.Domain/Finance.Domain.csproj",
+      "msbuildProject": "../Finance.Domain/Finance.Domain.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net10.0": []
+    "net10.0": [
+      "Finance.Domain >= 1.0.0"
+    ]
   },
   "packageFolders": {
     "C:\\Users\\Claudio Volnei\\.nuget\\packages\\": {},
@@ -35,12 +54,17 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net10.0": {
           "targetAlias": "net10.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "C:\\Users\\Claudio Volnei\\source\\repos\\finance-app\\src\\Finance.Domain\\Finance.Domain.csproj": {
+              "projectPath": "C:\\Users\\Claudio Volnei\\source\\repos\\finance-app\\src\\Finance.Domain\\Finance.Domain.csproj"
+            }
+          }
         }
       },
       "warningProperties": {

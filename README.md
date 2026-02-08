@@ -26,7 +26,7 @@ FinanceApp/
 | **Finance.Application** | Orquestração e regras de aplicação. Depende apenas do Domain. |
 | **Finance.Infrastructure** | Acesso a dados (Entity Framework Core, SQLite). Depende da Application. |
 | **Finance.Api** | API HTTP com OpenAPI/Swagger. Consome Application e Infrastructure. |
-| **Finance.Mobile** | App .NET MAUI com Blazor Hybrid e MudBlazor. Consome Application e Infrastructure. |
+| **Finance.Mobile** | App .NET MAUI com Blazor Hybrid e MudBlazor. **Consome a API REST via HTTP** (não usa banco local). |
 
 ## Domínio
 
@@ -52,7 +52,47 @@ Todas as entidades herdam de `BaseEntity` (`Id`, `CreatedAt`).
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Para **Finance.Mobile**: workloads MAUI e SDKs das plataformas desejadas (Android, iOS, Windows, etc.)
 
+### Erro XA5300 / XA0034 (Android SDK ou Java não encontrado)
+
+Se ao compilar para Android aparecer *"Não foi possível encontrar o diretório do SDK do Android"* ou *"Falha ao obter a versão do SDK do Java"*:
+
+1. **Opção A – Instalar Android SDK e Java pelo .NET** (sem Android Studio):
+
+   É obrigatório informar **Android SDK** e **JDK (Java 11+)**. Use caminhos sem espaços (ex.: `C:\android-sdk`, `C:\jdk`).
+
+   ```powershell
+   cd src/Finance.Mobile
+   dotnet build -t:InstallAndroidDependencies -f net10.0-android `
+     -p:AndroidSdkDirectory=C:\android-sdk `
+     -p:JavaSdkDirectory=C:\jdk `
+     -p:AcceptAndroidSdkLicenses=True
+   ```
+
+   Depois defina as variáveis de ambiente (ou use “Variáveis de Ambiente” no Windows):
+   - `ANDROID_HOME` = `C:\android-sdk`
+   - `JAVA_HOME` = `C:\jdk`
+
+2. **Opção B – Instalar o Android Studio**  
+   Instale o [Android Studio](https://developer.android.com/studio); o SDK será instalado em `%LOCALAPPDATA%\Android\Sdk` e o Java já vem incluído. O projeto já está configurado para usar esse caminho no Windows.
+
 ## Como executar
+
+### Banco de dados e Migrations
+
+O banco SQLite é criado automaticamente na primeira execução da API através de migrations do Entity Framework Core.
+
+Para criar uma nova migration:
+```bash
+cd src/Finance.Api
+dotnet ef migrations add NomeDaMigration --project ../Finance.Infrastructure/Finance.Infrastructure.csproj --startup-project Finance.Api.csproj --context AppDbContext
+```
+
+Para aplicar migrations:
+```bash
+dotnet ef database update --project ../Finance.Infrastructure/Finance.Infrastructure.csproj --startup-project Finance.Api.csproj --context AppDbContext
+```
+
+As migrations são aplicadas automaticamente na inicialização da API.
 
 ### API
 
@@ -61,9 +101,25 @@ cd src/Finance.Api
 dotnet run
 ```
 
-Em desenvolvimento, o OpenAPI fica disponível em `/openapi/v1.json`. A API usa HTTPS; a porta padrão está em `launchSettings.json` (ex.: 5102).
+A API estará disponível em `http://localhost:5102` (porta configurada em `launchSettings.json`).
+
+**Endpoints disponíveis:**
+- `POST /transactions` - Criar nova transação
+- `GET /transactions` - Listar todas as transações
+- `GET /accounts` - Listar todas as contas
+- `GET /categories` - Listar todas as categorias
+
+**Importante:** A API está configurada com CORS para permitir requisições do app mobile. Em produção, configure CORS adequadamente.
 
 ### App móvel (MAUI)
+
+**⚠️ Importante:** O app mobile **requer que a API esteja rodando** antes de iniciar, pois ele consome os endpoints via HTTP.
+
+1. **Inicie a API primeiro** (veja seção acima)
+2. **Configure a URL da API** se necessário em `src/Finance.Mobile/Services/ApiConfiguration.cs`
+   - Para Android Emulator: `http://10.0.2.2:5102`
+   - Para iOS Simulator/Windows/Mac: `http://localhost:5102`
+3. **Execute o app:**
 
 ```bash
 cd src/Finance.Mobile

@@ -1,0 +1,126 @@
+@page "/transactions/add"
+@using MudBlazor
+@using Finance.Domain.Entities
+@using Finance.Mobile.Services
+@inject FinanceApiClient ApiClient
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Nova Transação</MudText>
+
+    <MudForm>
+        <MudSelect T="Guid" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
+            @foreach (var category in _categories)
+            {
+                <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
+            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+        </MudSelect>
+
+        <MudNumericField Label="Valor" @bind-Value="_amount" Variant="Variant.Outlined" Required="true" Class="mt-4" />
+
+        <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" Class="mt-4" />
+
+        <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" Class="mt-4" />
+
+        <MudButtonGroup Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+                @if (_saving)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Salvando...</MudText>
+                }
+                else
+                {
+                    <MudText>Salvar</MudText>
+                }
+            </MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
+        </MudButtonGroup>
+    </MudForm>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private List<Category> _categories = new();
+    private Guid _categoryId;
+    private decimal _amount;
+    private DateTime _date = DateTime.Now;
+    private string _description = "";
+    private TransactionType _type = TransactionType.Expense;
+    private string _message = "";
+    private Severity _alertSeverity = Severity.Info;
+    private bool _saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            _categories = await ApiClient.GetCategoriesAsync();
+            if (_categories.Any())
+            {
+                _categoryId = _categories.First().Id;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar categorias: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+    }
+
+    private async Task Salvar()
+    {
+        if (_categoryId == Guid.Empty)
+        {
+            _message = "Selecione uma categoria";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await ApiClient.CreateTransactionAsync(
+                Guid.Empty, // AccountId - pode ser implementado depois
+                _categoryId,
+                _amount,
+                _date,
+                _description ?? "",
+                _type);
+
+            _message = "Transação criada com sucesso!";
+            _alertSeverity = Severity.Success;
+            
+            await Task.Delay(1000);
+            Navigation.NavigateTo("/transactions");
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao criar transação: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        Navigation.NavigateTo("/transactions");
+    }
+}

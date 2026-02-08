@@ -1,0 +1,110 @@
+@page "/transactions"
+@using MudBlazor
+@using Finance.Domain.Entities
+@using Finance.Mobile.Services
+@inject FinanceApiClient ApiClient
+@inject NavigationManager Navigation
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Transações</MudText>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd" Class="mb-4">
+        Nova Transação
+    </MudButton>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+    }
+    else if (_transactions == null || !_transactions.Any())
+    {
+        <MudAlert Severity="Severity.Info">Nenhuma transação encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="@_transactions" Hover="true" Dense="true" Striped="true">
+            <HeaderContent>
+                <MudTh>Data</MudTh>
+                <MudTh>Descrição</MudTh>
+                <MudTh>Valor</MudTh>
+                <MudTh>Tipo</MudTh>
+                <MudTh>Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
+                <MudTd DataLabel="Descrição">@context.Description</MudTd>
+                <MudTd DataLabel="Valor">@context.Amount.ToString("C")</MudTd>
+                <MudTd DataLabel="Tipo">
+                    <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Size="Size.Small">
+                        @context.Type.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Ações">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(context.Id))" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private List<Transaction>? _transactions;
+    private bool _loading = true;
+    private string _message = "";
+    private Severity _alertSeverity = Severity.Info;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTransactions();
+    }
+
+    private async Task LoadTransactions()
+    {
+        try
+        {
+            _loading = true;
+            _transactions = await ApiClient.GetTransactionsAsync();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar transações: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void NavigateToAdd()
+    {
+        Navigation.NavigateTo("/transactions/add");
+    }
+
+    private void NavigateToEdit(Guid id)
+    {
+        Navigation.NavigateTo($"/transactions/edit/{id}");
+    }
+
+    private async Task DeleteTransaction(Guid id)
+    {
+        try
+        {
+            await ApiClient.DeleteTransactionAsync(id);
+            _message = "Transação excluída com sucesso!";
+            _alertSeverity = Severity.Success;
+            await LoadTransactions();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao excluir transação: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+    }
+}
