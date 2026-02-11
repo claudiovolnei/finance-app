@@ -9,4 +9,5 @@ public interface ITransactionRepository
     Task AddAsync(Transaction transaction);
     Task UpdateAsync(Transaction transaction, Guid accountId, Guid categoryId, decimal amount, DateTime date, string description, TransactionType type);
     Task DeleteAsync(Guid id);
+    Task<List<Transaction>> GetByUserIdAsync(Guid userId);
 }

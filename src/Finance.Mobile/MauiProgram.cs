@@ -9,49 +9,59 @@ namespace Finance.Mobile;
 
 public static class MauiProgram
 {
-	public static MauiApp CreateMauiApp()
-	{
-		var builder = MauiApp.CreateBuilder();
-		builder
-			.UseMauiApp<App>()
-			.ConfigureFonts(fonts =>
-			{
-				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-			});
+    public static MauiApp CreateMauiApp()
+    {
+        var builder = MauiApp.CreateBuilder();
+        builder
+            .UseMauiApp<App>()
+            .ConfigureFonts(fonts =>
+            {
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+            });
 
-		builder.Services.AddMauiBlazorWebView();
+        builder.Services.AddMauiBlazorWebView();
 
-		// Carregar URL do backend: appsettings.json (Api:BaseUrl) ou valor padrão por plataforma
-		var config = new ConfigurationBuilder()
-			.SetBasePath(AppContext.BaseDirectory)
-			.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-			.Build();
+        // Carregar URL do backend: appsettings.json (Api:BaseUrl) ou valor padrão por plataforma
+        var config = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+            .Build();
 
-		var apiBaseUrl = config["Api:BaseUrl"]?.Trim();
-		if (string.IsNullOrEmpty(apiBaseUrl))
-			apiBaseUrl = ApiConfiguration.GetDefaultBaseUrl();
-		apiBaseUrl = apiBaseUrl.TrimEnd('/');
+        var apiBaseUrl = config["Api:BaseUrl"]?.Trim();
+        if (string.IsNullOrEmpty(apiBaseUrl))
+            apiBaseUrl = ApiConfiguration.GetDefaultBaseUrl();
+        apiBaseUrl = apiBaseUrl.TrimEnd('/');
 
-		// Registrar a URL base para o client construir URIs absolutos (evita problema de BaseAddress no Blazor)
-		builder.Services.AddSingleton(new ApiBaseUrl(apiBaseUrl));
-		builder.Services.AddHttpClient<FinanceApiClient>(client =>
-		{
-			client.Timeout = TimeSpan.FromSeconds(30);
-		});
+        // Registrar a URL base para o client construir URIs absolutos (evita problema de BaseAddress no Blazor)
+        builder.Services.AddSingleton(new ApiBaseUrl(apiBaseUrl));
+        builder.Services.AddHttpClient<FinanceApiClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        builder.Services.AddSingleton<TokenService>();
+        builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
+        builder.Services.AddScoped<FinanceApiClient>(sp =>
+        {
+            var factory = sp.GetRequiredService<IHttpClientFactory>();
+            var client = factory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(30);
+            var baseUrl = sp.GetRequiredService<ApiBaseUrl>();
+            return new FinanceApiClient(client, baseUrl);
+        });
 
-		builder.Services.AddMudServices(config =>
-		{
-			config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopCenter;
-			config.SnackbarConfiguration.VisibleStateDuration = 3000;
-			config.SnackbarConfiguration.HideTransitionDuration = 200;
-			config.SnackbarConfiguration.ShowTransitionDuration = 200;
-		});
+        builder.Services.AddMudServices(config =>
+        {
+            config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopCenter;
+            config.SnackbarConfiguration.VisibleStateDuration = 3000;
+            config.SnackbarConfiguration.HideTransitionDuration = 200;
+            config.SnackbarConfiguration.ShowTransitionDuration = 200;
+        });
 
-	#if DEBUG
-		builder.Services.AddBlazorWebViewDeveloperTools();
-		builder.Logging.AddDebug();
-	#endif
+    #if DEBUG
+        builder.Services.AddBlazorWebViewDeveloperTools();
+        builder.Logging.AddDebug();
+    #endif
 
-		return builder.Build();
-	}
+        return builder.Build();
+    }
 }

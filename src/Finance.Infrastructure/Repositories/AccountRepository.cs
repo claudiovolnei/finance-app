@@ -21,6 +21,9 @@ public class AccountRepository : IAccountRepository
     public Task<List<Account>> GetAllAsync()
         => _context.Accounts.ToListAsync();
 
+    public Task<List<Account>> GetByUserIdAsync(Guid userId)
+        => _context.Accounts.Where(a => a.UserId == userId).ToListAsync();
+
     public async Task AddAsync(Account account)
     {
         _context.Accounts.Add(account);

@@ -37,9 +37,36 @@ builder.Services.AddScoped<CreateCategoryUseCase>();
 builder.Services.AddScoped<UpdateCategoryUseCase>();
 builder.Services.AddScoped<DeleteCategoryUseCase>();
 
+// JWT and auth
+builder.Services.AddSingleton<Finance.Api.Services.JwtService>();
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer(options =>
+    {
+        var key = builder.Configuration["Jwt:Key"] ?? "please-change-this-key";
+        var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key));
+
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey
+        };
+    });
+
+// Add authorization services
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Database migration
 using (var scope = app.Services.CreateScope())
@@ -48,7 +75,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// Map endpoints
+// Map endpoints (includes dashboard)
 app.MapEndpoints();
 
 // OpenAPI document + Scalar UI (desenvolvimento)

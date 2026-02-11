@@ -24,6 +24,159 @@ html, body {
     overflow: auto;
 }
 
+/* Layout geral do dashboard */
+.finance-layout {
+    background-color: #f5f5f7;
+}
+
+.finance-main {
+    padding: 16px 24px;
+}
+
+.finance-main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.finance-drawer {
+    width: 240px;
+}
+
+/* Visibilidade desktop x mobile */
+.desktop-only {
+    display: inline-flex;
+}
+
+.mobile-only {
+    display: none;
+}
+
+@media (max-width: 959px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: inline-flex !important;
+    }
+
+    .finance-main {
+        padding: 8px 8px 96px; /* espaço para o bottom nav */
+    }
+}
+
+/* Container: em mobile adiciona espaço para o bottom nav */
+.main-container {
+    margin-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+@media (max-width: 959px) {
+    .main-container {
+        margin-top: 0.5rem !important;
+        padding-bottom: 90px !important; /* Espaço para o bottom nav bar + FAB */
+    }
+}
+
+/* Mobile header - compacto para evitar espaço em branco */
+.mobile-header {
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: var(--mud-palette-background, #fff);
+}
+
+/* Bottom navigation bar - responsivo */
+/* Bottom navigation bar - responsivo */
+.bottom-nav-bar {
+    padding: 6px 8px !important;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0)) !important;
+    min-height: 64px !important;
+    background: #ffffff !important;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+.bottom-nav-wrapper {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+}
+
+.bottom-nav-content {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    padding: 0 8px;
+    gap: 4px;
+}
+
+.bottom-nav-link {
+    display:flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    padding: 6px 4px !important;
+    font-size: 0.75rem !important;
+    color: rgba(0,0,0,0.6);
+}
+
+.bottom-nav-fab {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+}
+
+.bottom-nav-link .mud-icon-root {
+    margin-bottom: 4px;
+    font-size: 1.6rem !important;
+}
+
+.bottom-nav-link.mud-nav-link-active {
+    color: var(--mud-palette-primary) !important;
+    font-weight: 700;
+}
+
+.bottom-nav-fab .mud-icon-root {
+    font-size: 1.6rem !important;
+}
+
+.bottom-nav-fab-menu {
+    margin: 0 -4px;
+}
+
+.bottom-nav-label {
+    font-size: 0.75rem;
+    margin-top: 4px;
+}
+
+/* Ensure labels show on mobile and not clipped */
+.mobile-only .bottom-nav-label,
+.bottom-nav-link .bottom-nav-label {
+    display: block !important;
+}
+
+/* Telas muito pequenas - ajuste fino */
+@media (max-width: 360px) {
+    .bottom-nav-link {
+        font-size: 0.6rem !important;
+        padding: 2px 1px !important;
+    }
+    .bottom-nav-link .mud-icon-root {
+        font-size: 1.2rem !important;
+    }
+    .bottom-nav-fab {
+        width: 44px !important;
+        height: 44px !important;
+    }
+}
+
 #blazor-error-ui {
     background: lightyellow;
     bottom: 0;

@@ -8,5 +8,6 @@ public interface IAccountRepository
     Task<List<Account>> GetAllAsync();
     Task AddAsync(Account account);
     Task UpdateAsync(Account account, string newName, decimal newInitialBalance);
+    Task<List<Account>> GetByUserIdAsync(Guid userId);
     Task DeleteAsync(Guid id);
 }

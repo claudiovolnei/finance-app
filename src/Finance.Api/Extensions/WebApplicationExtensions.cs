@@ -9,6 +9,8 @@ public static class WebApplicationExtensions
         app.MapTransactionEndpoints();
         app.MapCategoryEndpoints();
         app.MapAccountEndpoints();
+        app.MapDashboardEndpoints();
+        app.MapAuthEndpoints();
 
         return app;
     }

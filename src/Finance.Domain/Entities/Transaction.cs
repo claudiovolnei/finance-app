@@ -10,6 +10,7 @@ public class Transaction : BaseEntity
     public DateTime Date { get; private set; }
     public string Description { get; private set; }
     public TransactionType Type { get; private set; }
+    public Guid UserId { get; private set; }
 
     public Transaction(
         Guid accountId,
@@ -17,7 +18,8 @@ public class Transaction : BaseEntity
         decimal amount,
         DateTime date,
         string description,
-        TransactionType type)
+        TransactionType type,
+        Guid userId)
     {
         AccountId = accountId;
         CategoryId = categoryId;
@@ -25,6 +27,7 @@ public class Transaction : BaseEntity
         Date = date;
         Description = description;
         Type = type;
+        UserId = userId;
     }
 }
 

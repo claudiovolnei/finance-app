@@ -1,0 +1,43 @@
+@using MudBlazor
+@inject NavigationManager Navigation
+
+<MudAppBar Elevation="2" Dense="true" Class="bottom-nav-bar" Bottom="true" Color="Color.Surface">
+    <div class="bottom-nav-content">
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Class="bottom-nav-link">
+            <MudIcon Icon="@Icons.Material.Filled.Home" />
+            <div class="bottom-nav-label">Dashboard</div>
+        </MudNavLink>
+        <MudNavLink Href="/transactions" Match="NavLinkMatch.All" Class="bottom-nav-link">
+            <MudIcon Icon="@Icons.Material.Filled.List" />
+            <div class="bottom-nav-label">Lançamentos</div>
+        </MudNavLink>
+
+        <div class="bottom-nav-center">
+            <MudIconButton Icon="@Icons.Material.Filled.Add"
+                Color="Color.Secondary" 
+                Size="Size.Large" 
+                Class="bottom-nav-fab"
+                Variant="Variant.Filled"
+                OnClick="GoToAddTransaction" />
+        </div>
+
+        <MudNavLink Href="/categories" Match="NavLinkMatch.All" Class="bottom-nav-link">
+            <MudIcon Icon="@Icons.Material.Filled.Category" />
+            <div class="bottom-nav-label">Categorias</div>
+        </MudNavLink>
+        <MudNavLink Href="#" Class="bottom-nav-link">
+            <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" />
+            <div class="bottom-nav-label">Mais</div>
+        </MudNavLink>
+    </div>
+</MudAppBar>
+
+@code {
+    private void GoToAddTransaction() => Navigation.NavigateTo("/transactions/add");
+    private void GoToAddCategory() => Navigation.NavigateTo("/categories/add");
+
+    private void GoToDashboard() => Navigation.NavigateTo("/");
+    private void GoToLancamentos() => Navigation.NavigateTo("/transactions");
+    private void GoToCategorias() => Navigation.NavigateTo("/categories");
+    private void GoToMais() => Navigation.NavigateTo("/more");
+}

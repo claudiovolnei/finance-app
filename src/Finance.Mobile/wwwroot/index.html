@@ -17,7 +17,41 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <!-- Para BlazorWebView (MAUI), o host chama Blazor.start().
+         Por isso o autostart deve ser false. -->
     <script src="_framework/blazor.webview.js" autostart="false"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script>
+        (function () {
+            function showError(msg) {
+                try {
+                    var el = document.getElementById('blazor-error-ui');
+                    if (!el) return;
+                    el.style.display = 'block';
+                    el.textContent = msg;
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            window.addEventListener('error', function (e) {
+                var message = (e && e.message) ? e.message : String(e);
+                var stack = (e && e.error && e.error.stack) ? '\n' + e.error.stack : '';
+                showError('Error: ' + message + stack);
+                console.error(e.error || e);
+            });
+
+            window.addEventListener('unhandledrejection', function (e) {
+                var reason = e && e.reason ? e.reason : e;
+                var message = (reason && reason.message) ? reason.message : JSON.stringify(reason);
+                var stack = (reason && reason.stack) ? '\n' + reason.stack : '';
+                showError('Unhandled Promise Rejection: ' + message + stack);
+                console.error(e);
+            });
+
+            // Also expose a helper for .NET to write errors explicitly
+            window.__showBlazorError = showError;
+        })();
+    </script>
 </body>
 </html>

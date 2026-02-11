@@ -1,11 +1,105 @@
 @page "/"
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h3" Class="mb-4">Finance App</MudText>
-    <MudText Typo="Typo.body1" Class="mb-4">
-        Bem-vindo ao aplicativo de controle financeiro!
-    </MudText>
-    <MudText Typo="Typo.body2" Class="mb-4">
-        Use o menu de navegação para gerenciar suas transações e categorias.
-    </MudText>
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
+        <!-- Top three info cards: full width on mobile, side by side on larger screens -->
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Success">R$ 3.250,00</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Receitas</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">R$ 5.000,00</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Despesas</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Error">R$ 1.750,00</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Gastos por Categoria (chart placeholder) -->
+        <MudItem xs="12" class="mt-3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1">Gastos por Categoria</MudText>
+                <div style="height:260px;display:flex;align-items:center;justify-content:center;"> 
+                    <MudChart ChartType="ChartType.Pie" Class="w-100" Height="220px" Labels="_chartLabels" Datasets="_chartDatasets" />
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Últimos Lançamentos -->
+        <MudItem xs="12" class="mt-3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1">Últimos Lançamentos</MudText>
+                <div style="overflow:auto;margin-top:8px;">
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                            <tr style="text-align:left;border-bottom:1px solid rgba(0,0,0,0.08);">
+                                <th style="padding:8px;">Data</th>
+                                <th style="padding:8px;">Descrição</th>
+                                <th style="padding:8px;">Categoria</th>
+                                <th style="padding:8px;">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding:8px;">24/04/2024</td>
+                                <td style="padding:8px;">Supermercado</td>
+                                <td style="padding:8px;">Alimentação</td>
+                                <td style="padding:8px;">R$ 300,00</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px;">22/04/2024</td>
+                                <td style="padding:8px;">Salário</td>
+                                <td style="padding:8px;">Salário</td>
+                                <td style="padding:8px;">R$ 5.000,00</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:8px;">20/04/2024</td>
+                                <td style="padding:8px;">Aluguel</td>
+                                <td style="padding:8px;">Moradia</td>
+                                <td style="padding:8px;">R$ 1.200,00</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 </MudContainer>
+
+@code {
+    [Inject] public FinanceApiClient Api { get; set; } = default!;
+    [Inject] public TokenService TokenService { get; set; } = default!;
+
+    private DashboardSummaryDto? _summary;
+    private string[] _chartLabels = Array.Empty<string>();
+    private MudBlazor.ChartSeries[] _chartDatasets = Array.Empty<MudBlazor.ChartSeries>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        Api.SetBearerToken(token);
+        try
+        {
+            var dto = await Api.GetDashboardSummaryAsync();
+            if (dto != null)
+            {
+                _summary = new DashboardSummaryDto(dto.Balance, dto.TotalIncome, dto.TotalExpense, dto.Categories.Select(c=> new CategorySummaryDto(c.CategoryId, c.Name, c.Amount, c.Percentage)).ToList(), dto.LatestTransactions.Select(t=> new TransactionSummaryDto(t.Id,t.Date,t.Description,t.CategoryId,t.CategoryName,t.Amount,t.Type)).ToList());
+
+                // prepare chart data
+                _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
+                _chartDatasets = new[] { new MudBlazor.ChartSeries { Name = "Gastos", Data = dto.Categories.Select(c => (double)c.Amount).ToArray() } };
+            }
+        }
+        catch
+        {
+            // ignore for now
+        }
+    }
+}

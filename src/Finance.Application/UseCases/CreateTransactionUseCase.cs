@@ -20,13 +20,16 @@ public class CreateTransactionUseCase
         string description,
         TransactionType type)
     {
+        // TODO: associate with current user; for now use system user id (Guid.Empty)
+        var userId = Guid.Empty;
         var transaction = new Transaction(
             accountId,
             categoryId,
             amount,
             date,
             description,
-            type);
+            type,
+            userId);
 
         await _repository.AddAsync(transaction);
     }

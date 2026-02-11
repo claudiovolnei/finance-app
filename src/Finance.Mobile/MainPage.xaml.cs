@@ -6,4 +6,10 @@ public partial class MainPage : ContentPage
 	{
 		InitializeComponent();
 	}
+
+
+
+
+
+
 }

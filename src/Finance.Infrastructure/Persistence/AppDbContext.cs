@@ -8,6 +8,9 @@ public class AppDbContext : DbContext
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Category> Categories => Set<Category>();
+    public DbSet<User> Users => Set<User>();
+
+    // Link entities: associate accounts/categories/transactions with a user
 
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options) { }

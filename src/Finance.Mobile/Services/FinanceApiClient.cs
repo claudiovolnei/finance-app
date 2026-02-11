@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using Finance.Domain.Entities;
+using System.Net.Http.Headers;
+using Finance.Mobile.Services;
 
 namespace Finance.Mobile.Services;
 
@@ -15,6 +17,42 @@ public class FinanceApiClient
     }
 
     private string Url(string path) => _baseUrl.GetAbsoluteUrl(path);
+
+    public void SetBearerToken(string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        else
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+    }
+
+    public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync()
+    {
+        var dto = await _httpClient.GetFromJsonAsync<DashboardSummaryDto>(Url("dashboard/summary"));
+        return dto;
+    }
+
+    public async Task<string?> LoginAsync(string username, string password)
+    {
+        var resp = await _httpClient.PostAsJsonAsync(Url("auth/login"), new { Username = username, Password = password });
+        if (!resp.IsSuccessStatusCode) return null;
+        var text = await resp.Content.ReadAsStringAsync();
+        try
+        {
+            var obj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string,string>>(text);
+            if (obj != null && obj.TryGetValue("token", out var token)) return token;
+        }
+        catch
+        {
+        }
+        return null;
+    }
+
+    public async Task<bool> RegisterAsync(string username, string password)
+    {
+        var resp = await _httpClient.PostAsJsonAsync(Url("auth/register"), new { Username = username, Password = password });
+        return resp.IsSuccessStatusCode;
+    }
 
     // ========== TRANSACTIONS ==========
     public async Task<List<Transaction>> GetTransactionsAsync()
@@ -128,6 +166,8 @@ public class FinanceApiClient
         DateTime Date,
         string? Description,
         TransactionType Type);
+
+    // dashboard DTOs are defined in src/Finance.Mobile/Services/DashboardDtos.cs
 
     private record UpdateTransactionRequest(
         Guid AccountId,

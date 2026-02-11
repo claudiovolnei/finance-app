@@ -21,6 +21,9 @@ public class TransactionRepository : ITransactionRepository
     public Task<List<Transaction>> GetAllAsync()
         => _context.Transactions.ToListAsync();
 
+    public Task<List<Transaction>> GetByUserIdAsync(Guid userId)
+        => _context.Transactions.Where(t => t.UserId == userId).ToListAsync();
+
     public async Task AddAsync(Transaction transaction)
     {
         _context.Transactions.Add(transaction);
