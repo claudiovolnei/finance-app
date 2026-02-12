@@ -33,6 +33,15 @@ html, body {
     padding: 16px 24px;
 }
 
+/* Center values inside top cards */
+.card-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 .finance-main-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -123,6 +132,22 @@ html, body {
     padding: 6px 4px !important;
     font-size: 0.75rem !important;
     color: rgba(0,0,0,0.6);
+    text-align: center;
+    overflow: visible;
+    min-height: 56px;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+    flex-basis: 0;
+    flex-grow: 1;
+}
+
+/* Ensure MudNavLink root is aligned vertically so icon sits above label */
+.bottom-nav-link .mud-nav-link-root,
+.bottom-nav-link .mud-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
 .bottom-nav-fab {
@@ -134,8 +159,11 @@ html, body {
 }
 
 .bottom-nav-link .mud-icon-root {
-    margin-bottom: 4px;
+    margin: 0 0 6px 0;
+    display: block;
     font-size: 1.6rem !important;
+    width: 100%;
+    text-align: center;
 }
 
 .bottom-nav-link.mud-nav-link-active {
@@ -143,8 +171,31 @@ html, body {
     font-weight: 700;
 }
 
+.bottom-nav-fab {
+    /* Slightly smaller circular FAB */
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+
 .bottom-nav-fab .mud-icon-root {
     font-size: 1.6rem !important;
+}
+
+/* Ensure MudBlazor's button classes don't force a square shape */
+.bottom-nav-fab.mud-icon-button,
+.bottom-nav-fab.mud-button-root,
+.bottom-nav-fab button {
+    width: 64px !important;
+    height: 64px !important;
+    min-width: 0 !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
 }
 
 .bottom-nav-fab-menu {
@@ -152,8 +203,26 @@ html, body {
 }
 
 .bottom-nav-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     margin-top: 4px;
+    white-space: normal !important;
+    overflow: visible !important;
+    word-break: break-word !important;
+    max-width: none;
+    text-align: center;
+    line-height: 1rem;
+}
+
+/* Ensure nav link root centers its content */
+.bottom-nav-link .mud-nav-link-root,
+.bottom-nav-link .mud-nav-link-content,
+.bottom-nav-link a
+{
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding: 0 !important;
 }
 
 /* Ensure labels show on mobile and not clipped */
@@ -172,9 +241,22 @@ html, body {
         font-size: 1.2rem !important;
     }
     .bottom-nav-fab {
-        width: 44px !important;
-        height: 44px !important;
+        width: 48px !important;
+        height: 48px !important;
     }
+    .bottom-nav-fab.mud-icon-button,
+    .bottom-nav-fab.mud-button-root,
+    .bottom-nav-fab button {
+        width: 48px !important;
+        height: 48px !important;
+        border-radius: 50% !important;
+    }
+}
+
+.bottom-nav-label {
+    white-space: normal !important;
+    overflow: visible !important;
+    line-height: 1rem;
 }
 
 #blazor-error-ui {

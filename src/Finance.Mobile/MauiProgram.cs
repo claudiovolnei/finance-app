@@ -34,17 +34,24 @@ public static class MauiProgram
 
         // Registrar a URL base para o client construir URIs absolutos (evita problema de BaseAddress no Blazor)
         builder.Services.AddSingleton(new ApiBaseUrl(apiBaseUrl));
-        builder.Services.AddHttpClient<FinanceApiClient>(client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
+
+        // Token service for storing JWT
         builder.Services.AddSingleton<TokenService>();
-        builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient());
-        builder.Services.AddScoped<FinanceApiClient>(sp =>
-        {
+
+        // Register AuthMessageHandler and configure HttpClient to use it
+        builder.Services.AddTransient<AuthMessageHandler>();
+        builder.Services.AddHttpClient("ApiClient")
+            .ConfigureHttpClient((sp, client) => {
+                var baseUrl = sp.GetRequiredService<ApiBaseUrl>();
+                client.BaseAddress = new Uri(baseUrl.GetAbsoluteUrl(""));
+                client.Timeout = TimeSpan.FromSeconds(30);
+            })
+            .AddHttpMessageHandler<AuthMessageHandler>();
+
+        // FinanceApiClient using named client
+        builder.Services.AddScoped<FinanceApiClient>(sp => {
             var factory = sp.GetRequiredService<IHttpClientFactory>();
-            var client = factory.CreateClient();
-            client.Timeout = TimeSpan.FromSeconds(30);
+            var client = factory.CreateClient("ApiClient");
             var baseUrl = sp.GetRequiredService<ApiBaseUrl>();
             return new FinanceApiClient(client, baseUrl);
         });

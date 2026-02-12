@@ -1,5 +1,7 @@
 using Finance.Api.Endpoints.Dtos;
 using Finance.Application.Repositories;
+using System.Security.Claims;
+
 
 namespace Finance.Api.Endpoints;
 
@@ -7,7 +9,7 @@ public static class DashboardEndpoints
 {
     public static void MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/dashboard").WithTags("Dashboard");
+        var group = app.MapGroup("/dashboard").WithTags("Dashboard").RequireAuthorization();
 
         group.MapGet("/summary", GetSummary)
             .WithName("GetDashboardSummary")
@@ -15,10 +17,16 @@ public static class DashboardEndpoints
             .Produces<DashboardSummaryDto>();
     }
 
-    private static async Task<IResult> GetSummary(ITransactionRepository transactionRepo, ICategoryRepository categoryRepo)
+    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo)
     {
-        var transactions = await transactionRepo.GetAllAsync();
-        var categories = await categoryRepo.GetAllAsync();
+        // get user id from claims
+        var userClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+        Guid userId = Guid.Empty;
+        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        var transactions = await transactionRepo.GetByUserIdAsync(userId);
+        var categories = await categoryRepo.GetByUserIdAsync(userId);
 
         var totalIncome = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Income).Sum(t => t.Amount);
         var totalExpense = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Expense).Sum(t => t.Amount);
@@ -31,18 +39,22 @@ public static class DashboardEndpoints
 
         var totalByCategories = categoryTotals.Sum(c => Math.Abs(c.Amount));
 
-        var categorySummaries = categoryTotals.Select(c => {
-            var cat = categories.FirstOrDefault(x => x.Id == c.CategoryId);
+        var categorySummaries = new List<CategorySummaryDto>();
+        foreach (var c in categoryTotals)
+        {
+            var cat = await categoryRepo.GetByIdAsync(c.CategoryId);
             var name = cat?.Name ?? "Outros";
             var percent = totalByCategories == 0 ? 0m : Math.Round((decimal)(Math.Abs(c.Amount) / totalByCategories) * 100m, 2);
-            return new CategorySummaryDto(c.CategoryId, name, c.Amount, percent);
-        }).ToList();
+            categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent));
+        }
 
-        var latest = transactions.OrderByDescending(t => t.Date).Take(5)
-            .Select(t => {
-                var cat = categories.FirstOrDefault(c => c.Id == t.CategoryId);
-                return new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, cat?.Name ?? string.Empty, t.Amount, t.Type);
-            }).ToList();
+        var latestTxs = transactions.OrderByDescending(t => t.Date).Take(5).ToList();
+        var latest = new List<TransactionSummaryDto>();
+        foreach (var t in latestTxs)
+        {
+            var cat = await categoryRepo.GetByIdAsync(t.CategoryId);
+            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, cat?.Name ?? string.Empty, t.Amount, t.Type));
+        }
 
         var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latest);
 

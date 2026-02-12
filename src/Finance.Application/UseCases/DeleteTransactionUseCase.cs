@@ -11,11 +11,14 @@ public class DeleteTransactionUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id)
+    public async Task ExecuteAsync(Guid id, Guid userId)
     {
         var transaction = await _repository.GetByIdAsync(id);
         if (transaction == null)
             throw new InvalidOperationException($"Transaction with id {id} not found");
+
+        if (transaction.UserId != userId)
+            throw new InvalidOperationException("Not authorized");
 
         await _repository.DeleteAsync(id);
     }

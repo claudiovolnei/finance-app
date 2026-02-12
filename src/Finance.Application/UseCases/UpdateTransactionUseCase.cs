@@ -19,11 +19,15 @@ public class UpdateTransactionUseCase
         decimal amount,
         DateTime date,
         string description,
-        TransactionType type)
+        TransactionType type,
+        Guid userId)
     {
         var transaction = await _repository.GetByIdAsync(id);
         if (transaction == null)
             throw new InvalidOperationException($"Transaction with id {id} not found");
+
+        if (transaction.UserId != userId) 
+            throw new InvalidOperationException("Not authorized");
 
         await _repository.UpdateAsync(transaction, accountId, categoryId, amount, date, description, type);
     }

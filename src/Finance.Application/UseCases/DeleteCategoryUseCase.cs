@@ -11,11 +11,14 @@ public class DeleteCategoryUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id)
+    public async Task ExecuteAsync(Guid id, Guid userId)
     {
         var category = await _repository.GetByIdAsync(id);
         if (category == null)
             throw new InvalidOperationException($"Category with id {id} not found");
+
+        if (category.UserId != userId)
+            throw new InvalidOperationException("Not authorized");
 
         await _repository.DeleteAsync(id);
     }

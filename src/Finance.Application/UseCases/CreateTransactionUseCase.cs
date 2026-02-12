@@ -18,10 +18,9 @@ public class CreateTransactionUseCase
         decimal amount,
         DateTime date,
         string description,
-        TransactionType type)
+        TransactionType type,
+        Guid userId)
     {
-        // TODO: associate with current user; for now use system user id (Guid.Empty)
-        var userId = Guid.Empty;
         var transaction = new Transaction(
             accountId,
             categoryId,

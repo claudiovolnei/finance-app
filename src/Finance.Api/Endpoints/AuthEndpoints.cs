@@ -14,8 +14,8 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/auth").WithTags("Auth");
 
-        group.MapPost("/register", Register).WithName("Register");
-        group.MapPost("/login", Login).WithName("Login");
+        group.MapPost("/register", Register).WithName("Register"); // No change; keep auth endpoints public
+        group.MapPost("/login", Login).WithName("Login"); // No change; keep auth endpoints public
     }
 
     private static async Task<IResult> Register(CreateUserRequest request, IAccountRepository accountRepo, ICategoryRepository categoryRepo, ITransactionRepository txRepo, AppDbContext db)

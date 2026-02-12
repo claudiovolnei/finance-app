@@ -28,7 +28,12 @@ public class FinanceApiClient
 
     public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync()
     {
-        var dto = await _httpClient.GetFromJsonAsync<DashboardSummaryDto>(Url("dashboard/summary"));
+        var resp = await _httpClient.GetAsync(Url("dashboard/summary"));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            return null;
+
+        resp.EnsureSuccessStatusCode();
+        var dto = await resp.Content.ReadFromJsonAsync<DashboardSummaryDto>();
         return dto;
     }
 

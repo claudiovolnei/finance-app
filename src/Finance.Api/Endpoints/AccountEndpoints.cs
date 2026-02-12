@@ -7,7 +7,8 @@ public static class AccountEndpoints
     public static void MapAccountEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/accounts")
-            .WithTags("Accounts");
+            .WithTags("Accounts")
+            .RequireAuthorization();
 
         group.MapGet("/", GetAllAccounts)
             .WithName("GetAllAccounts")

@@ -12,10 +12,8 @@ public class CreateCategoryUseCase
         _repository = repository;
     }
 
-    public async Task<Category> ExecuteAsync(string name)
+    public async Task<Category> ExecuteAsync(string name, Guid userId)
     {
-        // TODO: associate with current user; for now use system user id (Guid.Empty)
-        var userId = Guid.Empty;
         var category = new Category(name, userId);
         await _repository.AddAsync(category);
         return category;

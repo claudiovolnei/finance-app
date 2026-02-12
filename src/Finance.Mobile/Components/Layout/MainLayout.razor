@@ -1,6 +1,6 @@
 @inherits LayoutComponentBase
 @using MudBlazor
-@inject NavigationManager Navigation
+@* Navigation injected in code-behind to avoid duplicate symbol *@
 
 <MudThemeProvider Theme="_theme" />
 <MudDialogProvider />
@@ -66,10 +66,26 @@
     private MudTheme _theme = new();
     private string _selectedMonth = "Abril 2024";
 
+    [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
+    [Inject] public NavigationManager Navigation { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Redirect to login if no token and not already on auth pages
+        var token = await TokenService.GetTokenAsync();
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+        if (string.IsNullOrEmpty(token) && uri != "login" && uri != "auth/register")
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
     private void DrawerToggle() => _drawerOpen = !_drawerOpen;
     private void GoToAddTransaction() => Navigation.NavigateTo("/transactions/add");
     private void GoToProfile() => Navigation.NavigateTo("/profile");
-    private void Logout() {
-        // Placeholder: implementar logout
+    private async void Logout()
+    {
+        await TokenService.RemoveTokenAsync();
+        Navigation.NavigateTo("/login");
     }
 }

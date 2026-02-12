@@ -22,7 +22,7 @@
         if (!string.IsNullOrEmpty(token))
         {
             await TokenService.SaveTokenAsync(token);
-            Api.SetBearerToken(token);
+            // FinanceApiClient will pick token via AuthMessageHandler on next requests
             Navigation.NavigateTo("/");
         }
     }

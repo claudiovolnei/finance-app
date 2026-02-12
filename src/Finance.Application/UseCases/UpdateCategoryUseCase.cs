@@ -11,11 +11,14 @@ public class UpdateCategoryUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id, string name)
+    public async Task ExecuteAsync(Guid id, string name, Guid userId)
     {
         var category = await _repository.GetByIdAsync(id);
         if (category == null)
             throw new InvalidOperationException($"Category with id {id} not found");
+
+        if (category.UserId != userId)
+            throw new InvalidOperationException("Not authorized");
 
         // O repositório irá atualizar usando EF Core
         await _repository.UpdateAsync(category, name);

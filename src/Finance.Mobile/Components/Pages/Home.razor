@@ -2,23 +2,23 @@
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
-        <!-- Top three info cards: full width on mobile, side by side on larger screens -->
-        <MudItem xs="12" sm="4">
-            <MudPaper Class="pa-4" Elevation="1">
+        <!-- Top info cards: Saldo full width, Receitas and Despesas side by side on larger screens -->
+        <MudItem xs="12" sm="12">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Success">R$ 3.250,00</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Success">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="4">
-            <MudPaper Class="pa-4" Elevation="1">
+        <MudItem xs="6" sm="6">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Primary">R$ 5.000,00</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="4">
-            <MudPaper Class="pa-4" Elevation="1">
+        <MudItem xs="6" sm="6">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Despesas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Error">R$ 1.750,00</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalExpense))</MudText>
             </MudPaper>
         </MudItem>
 
@@ -47,24 +47,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td style="padding:8px;">24/04/2024</td>
-                                <td style="padding:8px;">Supermercado</td>
-                                <td style="padding:8px;">Alimentação</td>
-                                <td style="padding:8px;">R$ 300,00</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px;">22/04/2024</td>
-                                <td style="padding:8px;">Salário</td>
-                                <td style="padding:8px;">Salário</td>
-                                <td style="padding:8px;">R$ 5.000,00</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px;">20/04/2024</td>
-                                <td style="padding:8px;">Aluguel</td>
-                                <td style="padding:8px;">Moradia</td>
-                                <td style="padding:8px;">R$ 1.200,00</td>
-                            </tr>
+                        @if (_summary != null)
+                        {
+                            foreach (var tx in _summary.LatestTransactions)
+                            {
+                                <tr>
+                                    <td style="padding:8px;">@tx.Date.ToString("dd/MM/yyyy")</td>
+                                    <td style="padding:8px;">@tx.Description</td>
+                                    <td style="padding:8px;">@tx.CategoryName</td>
+                                    <td style="padding:8px;">@string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", tx.Amount)</td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="4" style="padding:8px;">Carregando...</td></tr>
+                        }
                         </tbody>
                     </table>
                 </div>
@@ -76,6 +74,7 @@
 @code {
     [Inject] public FinanceApiClient Api { get; set; } = default!;
     [Inject] public TokenService TokenService { get; set; } = default!;
+    [Inject] public NavigationManager Navigation { get; set; } = default!;
 
     private DashboardSummaryDto? _summary;
     private string[] _chartLabels = Array.Empty<string>();
@@ -84,22 +83,37 @@
     protected override async Task OnInitializedAsync()
     {
         var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         Api.SetBearerToken(token);
+
         try
         {
             var dto = await Api.GetDashboardSummaryAsync();
             if (dto != null)
             {
-                _summary = new DashboardSummaryDto(dto.Balance, dto.TotalIncome, dto.TotalExpense, dto.Categories.Select(c=> new CategorySummaryDto(c.CategoryId, c.Name, c.Amount, c.Percentage)).ToList(), dto.LatestTransactions.Select(t=> new TransactionSummaryDto(t.Id,t.Date,t.Description,t.CategoryId,t.CategoryName,t.Amount,t.Type)).ToList());
-
-                // prepare chart data
+                _summary = dto;
                 _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
-                _chartDatasets = new[] { new MudBlazor.ChartSeries { Name = "Gastos", Data = dto.Categories.Select(c => (double)c.Amount).ToArray() } };
+                var data = dto.Categories.Select(c => (double)c.Amount).ToArray();
+                _chartDatasets = new[] { new MudBlazor.ChartSeries { Name = "Gastos", Data = data } };
+                // ensure UI updates
+                StateHasChanged();
+            }
+            else
+            {
+                // API returned unauthorized or no data — redirect to login
+                Navigation.NavigateTo("/login");
+                return;
             }
         }
         catch
         {
-            // ignore for now
+            // ignore
         }
     }
+
+    
 }

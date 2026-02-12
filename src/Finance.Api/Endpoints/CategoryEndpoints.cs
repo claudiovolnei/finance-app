@@ -9,7 +9,8 @@ public static class CategoryEndpoints
     public static void MapCategoryEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/categories")
-            .WithTags("Categories");
+            .WithTags("Categories")
+            .RequireAuthorization();
 
         group.MapGet("/", GetAllCategories)
             .WithName("GetAllCategories")
@@ -43,25 +44,44 @@ public static class CategoryEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllCategories(ICategoryRepository repository)
+    private static async Task<IResult> GetAllCategories(HttpContext httpContext, ICategoryRepository repository)
     {
-        var categories = await repository.GetAllAsync();
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        Guid userId = Guid.Empty;
+        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        var categories = await repository.GetByUserIdAsync(userId);
         return Results.Ok(categories);
     }
 
-    private static async Task<IResult> GetCategoryById(Guid id, ICategoryRepository repository)
+    private static async Task<IResult> GetCategoryById(HttpContext httpContext, Guid id, ICategoryRepository repository)
     {
         var category = await repository.GetByIdAsync(id);
-        return category != null ? Results.Ok(category) : Results.NotFound();
+        if (category == null) return Results.NotFound();
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        Guid userId = Guid.Empty;
+        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        if (category.UserId != userId) return Results.Unauthorized();
+
+        return Results.Ok(category);
     }
 
     private static async Task<IResult> CreateCategory(
+        HttpContext httpContext,
         CreateCategoryUseCase useCase,
         CreateCategoryRequest request)
     {
         try
         {
-            var category = await useCase.ExecuteAsync(request.Name);
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
+            var category = await useCase.ExecuteAsync(request.Name, userId);
             return Results.Ok(category);
         }
         catch (Exception ex)
@@ -71,13 +91,19 @@ public static class CategoryEndpoints
     }
 
     private static async Task<IResult> UpdateCategory(
+        HttpContext httpContext,
         Guid id,
         UpdateCategoryUseCase useCase,
         UpdateCategoryRequest request)
     {
         try
         {
-            await useCase.ExecuteAsync(id, request.Name);
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
+            await useCase.ExecuteAsync(id, request.Name, userId);
             return Results.Ok(new { message = "Category updated successfully" });
         }
         catch (InvalidOperationException ex)
@@ -91,12 +117,18 @@ public static class CategoryEndpoints
     }
 
     private static async Task<IResult> DeleteCategory(
+        HttpContext httpContext,
         Guid id,
         DeleteCategoryUseCase useCase)
     {
         try
         {
-            await useCase.ExecuteAsync(id);
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
+            await useCase.ExecuteAsync(id, userId);
             return Results.Ok(new { message = "Category deleted successfully" });
         }
         catch (InvalidOperationException ex)

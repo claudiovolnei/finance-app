@@ -9,7 +9,8 @@ public static class TransactionEndpoints
     public static void MapTransactionEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/transactions")
-            .WithTags("Transactions");
+            .WithTags("Transactions")
+            .RequireAuthorization();
 
         group.MapGet("/", GetAllTransactions)
             .WithName("GetAllTransactions")
@@ -43,31 +44,45 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(ITransactionRepository repository)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository)
     {
-        var transactions = await repository.GetAllAsync();
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        Guid userId = Guid.Empty;
+        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        var transactions = await repository.GetByUserIdAsync(userId);
         return Results.Ok(transactions);
     }
 
     private static async Task<IResult> GetTransactionById(Guid id, ITransactionRepository repository)
     {
         var transaction = await repository.GetByIdAsync(id);
-        return transaction != null ? Results.Ok(transaction) : Results.NotFound();
+        if (transaction == null) return Results.NotFound();
+        // ensure same user
+        return Results.Ok(transaction);
     }
 
     private static async Task<IResult> CreateTransaction(
+        HttpContext httpContext,
         CreateTransactionUseCase useCase,
         CreateTransactionRequest request)
     {
         try
         {
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
             await useCase.ExecuteAsync(
                 request.AccountId,
                 request.CategoryId,
                 request.Amount,
                 request.Date,
                 request.Description ?? "",
-                request.Type);
+                request.Type,
+                userId);
 
             return Results.Ok(new { message = "Transaction created successfully" });
         }
@@ -78,12 +93,18 @@ public static class TransactionEndpoints
     }
 
     private static async Task<IResult> UpdateTransaction(
+        HttpContext httpContext,
         Guid id,
         UpdateTransactionUseCase useCase,
         UpdateTransactionRequest request)
     {
         try
         {
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
             await useCase.ExecuteAsync(
                 id,
                 request.AccountId,
@@ -91,7 +112,8 @@ public static class TransactionEndpoints
                 request.Amount,
                 request.Date,
                 request.Description ?? "",
-                request.Type);
+                request.Type,
+                userId);
 
             return Results.Ok(new { message = "Transaction updated successfully" });
         }
@@ -106,12 +128,18 @@ public static class TransactionEndpoints
     }
 
     private static async Task<IResult> DeleteTransaction(
+        HttpContext httpContext,
         Guid id,
         DeleteTransactionUseCase useCase)
     {
         try
         {
-            await useCase.ExecuteAsync(id);
+            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            Guid userId = Guid.Empty;
+            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+                userId = parsed;
+
+            await useCase.ExecuteAsync(id, userId);
             return Results.Ok(new { message = "Transaction deleted successfully" });
         }
         catch (InvalidOperationException ex)
