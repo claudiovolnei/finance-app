@@ -15,14 +15,21 @@ public class TransactionRepository : ITransactionRepository
         _context = context;
     }
 
-    public async Task<Transaction?> GetByIdAsync(Guid id)
+    public async Task<Transaction?> GetByIdAsync(int id)
         => await _context.Transactions.FindAsync(id);
 
     public Task<List<Transaction>> GetAllAsync()
         => _context.Transactions.ToListAsync();
 
-    public Task<List<Transaction>> GetByUserIdAsync(Guid userId)
-        => _context.Transactions.Where(t => t.UserId == userId).ToListAsync();
+    public Task<List<Transaction>> GetByUserIdAsync(int userId, int? year = null, int? month = null)
+    {
+        var q = _context.Transactions.Where(t => t.UserId == userId).AsQueryable();
+        if (year.HasValue)
+            q = q.Where(t => t.Date.Year == year.Value);
+        if (month.HasValue)
+            q = q.Where(t => t.Date.Month == month.Value);
+        return q.ToListAsync();
+    }
 
     public async Task AddAsync(Transaction transaction)
     {
@@ -30,7 +37,7 @@ public class TransactionRepository : ITransactionRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateAsync(Transaction transaction, Guid accountId, Guid categoryId, decimal amount, DateTime date, string description, TransactionType type)
+    public async Task UpdateAsync(Transaction transaction, int accountId, int categoryId, decimal amount, DateTime date, string description, TransactionType type)
     {
         // Usar reflection para atualizar propriedades privadas
         typeof(Transaction).GetProperty("AccountId", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(transaction, accountId);
@@ -44,7 +51,7 @@ public class TransactionRepository : ITransactionRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(int id)
     {
         var transaction = await _context.Transactions.FindAsync(id);
         if (transaction != null)

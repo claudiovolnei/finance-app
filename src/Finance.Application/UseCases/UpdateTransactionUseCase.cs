@@ -13,14 +13,14 @@ public class UpdateTransactionUseCase
     }
 
     public async Task ExecuteAsync(
-        Guid id,
-        Guid accountId,
-        Guid categoryId,
+        int id,
+        int accountId,
+        int categoryId,
         decimal amount,
         DateTime date,
         string description,
         TransactionType type,
-        Guid userId)
+        int userId)
     {
         var transaction = await _repository.GetByIdAsync(id);
         if (transaction == null)

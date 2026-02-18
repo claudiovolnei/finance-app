@@ -8,7 +8,9 @@
         <MudText Typo="Typo.h5">Login</MudText>
         <MudTextField @bind-Value="_username" Label="Usuário" />
         <MudTextField @bind-Value="_password" Label="Senha" InputType="InputType.Password" />
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin">Entrar</MudButton>
+        <div style="align-content center">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin">Entrar</MudButton>
+        </div>
     </MudPaper>
 </MudContainer>
 

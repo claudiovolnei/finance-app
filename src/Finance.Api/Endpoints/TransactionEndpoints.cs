@@ -15,13 +15,20 @@ public static class TransactionEndpoints
         group.MapGet("/", GetAllTransactions)
             .WithName("GetAllTransactions")
             .WithSummary("Lista todas as transações")
-            .Produces<List<Finance.Domain.Entities.Transaction>>();
+            .Produces<List<Finance.Domain.Entities.Transaction>>()
+            .AddEndpointFilter(async (context, next) =>
+            {
+                // allow parsing of optional query params year and month
+                return await next(context);
+            });
 
-        group.MapGet("/{id:guid}", GetTransactionById)
+        group.MapGet("/{id:int}", GetTransactionById)
             .WithName("GetTransactionById")
             .WithSummary("Busca uma transação por ID")
             .Produces<Finance.Domain.Entities.Transaction>()
             .Produces(404);
+        
+        // Support optional year/month as query parameters via same endpoint (query string)
 
         group.MapPost("/", CreateTransaction)
             .WithName("CreateTransaction")
@@ -29,14 +36,14 @@ public static class TransactionEndpoints
             .Produces(200)
             .Produces(400);
 
-        group.MapPut("/{id:guid}", UpdateTransaction)
+        group.MapPut("/{id:int}", UpdateTransaction)
             .WithName("UpdateTransaction")
             .WithSummary("Atualiza uma transação existente")
             .Produces(200)
             .Produces(400)
             .Produces(404);
 
-        group.MapDelete("/{id:guid}", DeleteTransaction)
+        group.MapDelete("/{id:int}", DeleteTransaction)
             .WithName("DeleteTransaction")
             .WithSummary("Exclui uma transação")
             .Produces(200)
@@ -44,18 +51,18 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, int? year = null, int? month = null)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        Guid userId = Guid.Empty;
-        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var transactions = await repository.GetByUserIdAsync(userId);
+        var transactions = await repository.GetByUserIdAsync(userId, year, month);
         return Results.Ok(transactions);
     }
 
-    private static async Task<IResult> GetTransactionById(Guid id, ITransactionRepository repository)
+    private static async Task<IResult> GetTransactionById(int id, ITransactionRepository repository)
     {
         var transaction = await repository.GetByIdAsync(id);
         if (transaction == null) return Results.NotFound();
@@ -71,8 +78,8 @@ public static class TransactionEndpoints
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             await useCase.ExecuteAsync(
@@ -94,15 +101,15 @@ public static class TransactionEndpoints
 
     private static async Task<IResult> UpdateTransaction(
         HttpContext httpContext,
-        Guid id,
+        int id,
         UpdateTransactionUseCase useCase,
         UpdateTransactionRequest request)
     {
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             await useCase.ExecuteAsync(
@@ -129,14 +136,14 @@ public static class TransactionEndpoints
 
     private static async Task<IResult> DeleteTransaction(
         HttpContext httpContext,
-        Guid id,
+        int id,
         DeleteTransactionUseCase useCase)
     {
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             await useCase.ExecuteAsync(id, userId);

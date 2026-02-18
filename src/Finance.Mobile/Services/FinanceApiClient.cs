@@ -28,7 +28,7 @@ public class FinanceApiClient
 
     public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync()
     {
-        var resp = await _httpClient.GetAsync(Url("dashboard/summary"));
+        var resp = await _httpClient.GetAsync(Url($"dashboard/summary"));
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             return null;
 
@@ -66,14 +66,25 @@ public class FinanceApiClient
         return transactions ?? new List<Transaction>();
     }
 
-    public async Task<Transaction?> GetTransactionByIdAsync(Guid id)
+    public async Task<List<Transaction>> GetTransactionsAsync(int? year, int? month)
+    {
+        var url = "transactions";
+        var query = new List<string>();
+        if (year.HasValue) query.Add($"year={year.Value}");
+        if (month.HasValue) query.Add($"month={month.Value}");
+        if (query.Any()) url += "?" + string.Join("&", query);
+        var transactions = await _httpClient.GetFromJsonAsync<List<Transaction>>(Url(url));
+        return transactions ?? new List<Transaction>();
+    }
+
+    public async Task<Transaction?> GetTransactionByIdAsync(int id)
     {
         return await _httpClient.GetFromJsonAsync<Transaction>(Url($"transactions/{id}"));
     }
 
     public async Task CreateTransactionAsync(
-        Guid accountId,
-        Guid categoryId,
+        int accountId,
+        int categoryId,
         decimal amount,
         DateTime date,
         string description,
@@ -92,9 +103,9 @@ public class FinanceApiClient
     }
 
     public async Task UpdateTransactionAsync(
-        Guid id,
-        Guid accountId,
-        Guid categoryId,
+        int id,
+        int accountId,
+        int categoryId,
         decimal amount,
         DateTime date,
         string description,
@@ -112,7 +123,7 @@ public class FinanceApiClient
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteTransactionAsync(Guid id)
+    public async Task DeleteTransactionAsync(int id)
     {
         var response = await _httpClient.DeleteAsync(Url($"transactions/{id}"));
         response.EnsureSuccessStatusCode();
@@ -125,7 +136,7 @@ public class FinanceApiClient
         return categories ?? new List<Category>();
     }
 
-    public async Task<Category?> GetCategoryByIdAsync(Guid id)
+    public async Task<Category?> GetCategoryByIdAsync(int id)
     {
         return await _httpClient.GetFromJsonAsync<Category>(Url($"categories/{id}"));
     }
@@ -138,14 +149,14 @@ public class FinanceApiClient
         return await response.Content.ReadFromJsonAsync<Category>() ?? throw new Exception("Failed to create category");
     }
 
-    public async Task UpdateCategoryAsync(Guid id, string name)
+    public async Task UpdateCategoryAsync(int id, string name)
     {
         var request = new UpdateCategoryRequest(name);
         var response = await _httpClient.PutAsJsonAsync(Url($"categories/{id}"), request);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task DeleteCategoryAsync(Guid id)
+    public async Task DeleteCategoryAsync(int id)
     {
         var response = await _httpClient.DeleteAsync(Url($"categories/{id}"));
         response.EnsureSuccessStatusCode();
@@ -158,15 +169,15 @@ public class FinanceApiClient
         return accounts ?? new List<Account>();
     }
 
-    public async Task<Account?> GetAccountByIdAsync(Guid id)
+    public async Task<Account?> GetAccountByIdAsync(int id)
     {
         return await _httpClient.GetFromJsonAsync<Account>(Url($"accounts/{id}"));
     }
 
     // Request DTOs
     private record CreateTransactionRequest(
-        Guid AccountId,
-        Guid CategoryId,
+        int AccountId,
+        int CategoryId,
         decimal Amount,
         DateTime Date,
         string? Description,
@@ -175,8 +186,8 @@ public class FinanceApiClient
     // dashboard DTOs are defined in src/Finance.Mobile/Services/DashboardDtos.cs
 
     private record UpdateTransactionRequest(
-        Guid AccountId,
-        Guid CategoryId,
+        int AccountId,
+        int CategoryId,
         decimal Amount,
         DateTime Date,
         string? Description,

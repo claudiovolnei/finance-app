@@ -11,7 +11,7 @@ public class UpdateCategoryUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id, string name, Guid userId)
+    public async Task ExecuteAsync(int id, string name, int userId)
     {
         var category = await _repository.GetByIdAsync(id);
         if (category == null)

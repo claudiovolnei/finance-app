@@ -6,9 +6,9 @@ public class Account : BaseEntity
 {
     public string Name { get; private set; }
     public decimal InitialBalance { get; private set; }
-    public Guid UserId { get; private set; }
+    public int UserId { get; private set; }
 
-    public Account(string name, decimal initialBalance, Guid userId)
+    public Account(string name, decimal initialBalance, int userId)
     {
         Name = name;
         InitialBalance = initialBalance;

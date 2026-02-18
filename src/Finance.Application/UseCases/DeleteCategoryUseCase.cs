@@ -11,7 +11,7 @@ public class DeleteCategoryUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id, Guid userId)
+    public async Task ExecuteAsync(int id, int userId)
     {
         var category = await _repository.GetByIdAsync(id);
         if (category == null)

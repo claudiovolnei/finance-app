@@ -9,10 +9,10 @@
     <MudText Typo="Typo.h4" Class="mb-4">Nova Transação</MudText>
 
     <MudForm>
-        <MudSelect T="Guid" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
+        <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
             @foreach (var category in _categories)
             {
-                <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                <MudSelectItem Value="@category.Id" >@category.Name</MudSelectItem>
             }
         </MudSelect>
 
@@ -51,7 +51,7 @@
 
 @code {
     private List<Category> _categories = new();
-    private Guid _categoryId;
+    private int _categoryId;
     private decimal _amount;
     private DateTime _date = DateTime.Now;
     private string _description = "";
@@ -84,7 +84,7 @@
 
     private async Task Salvar()
     {
-        if (_categoryId == Guid.Empty)
+        if (_categoryId == 0)
         {
             _message = "Selecione uma categoria";
             _alertSeverity = Severity.Warning;
@@ -95,7 +95,7 @@
         {
             _saving = true;
             await ApiClient.CreateTransactionAsync(
-                Guid.Empty, // AccountId - pode ser implementado depois
+                0, // AccountId - pode ser implementado depois
                 _categoryId,
                 _amount,
                 _date,

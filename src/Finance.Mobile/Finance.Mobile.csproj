@@ -82,4 +82,8 @@
       <ProjectReference Include="..\Finance.Domain\Finance.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="wwwroot\lib\" />
+    </ItemGroup>
+
 </Project>

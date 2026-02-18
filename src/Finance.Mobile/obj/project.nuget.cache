@@ -65,8 +65,8 @@
       "filePath": "C:\\Users\\Claudio Volnei\\source\\repos\\finance-app\\src\\Finance.Mobile\\Finance.Mobile.csproj",
       "libraryId": "Microsoft.AspNetCore.Components.WebView.Maui",
       "targetGraphs": [
-        "net10.0-windows10.0.19041",
-        "net10.0-windows10.0.19041/win-x64"
+        "net10.0-windows10.0.19041.0",
+        "net10.0-windows10.0.19041.0/win-x64"
       ]
     },
     {
@@ -78,8 +78,8 @@
       "filePath": "C:\\Users\\Claudio Volnei\\source\\repos\\finance-app\\src\\Finance.Mobile\\Finance.Mobile.csproj",
       "libraryId": "Microsoft.Maui.Controls",
       "targetGraphs": [
-        "net10.0-windows10.0.19041",
-        "net10.0-windows10.0.19041/win-x64"
+        "net10.0-windows10.0.19041.0",
+        "net10.0-windows10.0.19041.0/win-x64"
       ]
     }
   ]

@@ -46,11 +46,6 @@ public static class AuthEndpoints
         var account = new Account("Conta Principal", 0m, user.Id);
         await accountRepo.AddAsync(account);
 
-        var c1 = new Category("Alimentação", user.Id);
-        var c2 = new Category("Moradia", user.Id);
-        await categoryRepo.AddAsync(c1);
-        await categoryRepo.AddAsync(c2);
-
         return Results.Ok(new { message = "User registered" });
     }
 

@@ -77,12 +77,12 @@
         Navigation.NavigateTo("/categories/add");
     }
 
-    private void NavigateToEdit(Guid id)
+    private void NavigateToEdit(int id)
     {
         Navigation.NavigateTo($"/categories/edit/{id}");
     }
 
-    private async Task DeleteCategory(Guid id)
+    private async Task DeleteCategory(int id)
     {
         try
         {

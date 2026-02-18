@@ -13,13 +13,13 @@ public class CreateTransactionUseCase
     }
 
     public async Task ExecuteAsync(
-        Guid accountId,
-        Guid categoryId,
+        int accountId,
+        int categoryId,
         decimal amount,
         DateTime date,
         string description,
         TransactionType type,
-        Guid userId)
+        int userId)
     {
         var transaction = new Transaction(
             accountId,

@@ -15,13 +15,13 @@ public class AccountRepository : IAccountRepository
         _context = context;
     }
 
-    public async Task<Account?> GetByIdAsync(Guid id)
+    public async Task<Account?> GetByIdAsync(int id)
         => await _context.Accounts.FindAsync(id);
 
     public Task<List<Account>> GetAllAsync()
         => _context.Accounts.ToListAsync();
 
-    public Task<List<Account>> GetByUserIdAsync(Guid userId)
+    public Task<List<Account>> GetByUserIdAsync(int userId)
         => _context.Accounts.Where(a => a.UserId == userId).ToListAsync();
 
     public async Task AddAsync(Account account)
@@ -39,7 +39,7 @@ public class AccountRepository : IAccountRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(int id)
     {
         var account = await _context.Accounts.FindAsync(id);
         if (account != null)

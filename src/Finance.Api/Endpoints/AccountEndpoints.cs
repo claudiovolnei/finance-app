@@ -15,7 +15,7 @@ public static class AccountEndpoints
             .WithSummary("Lista todas as contas")
             .Produces<List<Finance.Domain.Entities.Account>>();
 
-        group.MapGet("/{id:guid}", GetAccountById)
+        group.MapGet("/{id:int}", GetAccountById)
             .WithName("GetAccountById")
             .WithSummary("Busca uma conta por ID")
             .Produces<Finance.Domain.Entities.Account>()
@@ -28,7 +28,7 @@ public static class AccountEndpoints
         return Results.Ok(accounts);
     }
 
-    private static async Task<IResult> GetAccountById(Guid id, IAccountRepository repository)
+    private static async Task<IResult> GetAccountById(int id, IAccountRepository repository)
     {
         var account = await repository.GetByIdAsync(id);
         return account != null ? Results.Ok(account) : Results.NotFound();

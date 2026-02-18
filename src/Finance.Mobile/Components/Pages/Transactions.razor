@@ -87,12 +87,12 @@
         Navigation.NavigateTo("/transactions/add");
     }
 
-    private void NavigateToEdit(Guid id)
+    private void NavigateToEdit(int id)
     {
         Navigation.NavigateTo($"/transactions/edit/{id}");
     }
 
-    private async Task DeleteTransaction(Guid id)
+    private async Task DeleteTransaction(int id)
     {
         try
         {

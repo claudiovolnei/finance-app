@@ -1,4 +1,15 @@
 @page "/"
+@using Finance.Mobile.Components.Charts
+@using Finance.Mobile.Services
+
+<!-- Global month/year selector for the whole Home page -->
+<MudItem xs="12" class="mt-2">
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="PrevMonth" />
+        <MudText Typo="Typo.subtitle1">@GetCurrentFilterLabel()</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos" OnClick="NextMonth" />
+    </div>
+</MudItem>
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
@@ -25,10 +36,7 @@
         <!-- Gastos por Categoria (chart placeholder) -->
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
-                <MudText Typo="Typo.subtitle1">Gastos por Categoria</MudText>
-                <div style="height:260px;display:flex;align-items:center;justify-content:center;"> 
-                    <MudChart ChartType="ChartType.Pie" Class="w-100" Height="220px" Labels="_chartLabels" Datasets="_chartDatasets" />
-                </div>
+                <CategoryBarChart Labels="@_chartLabels" Values="@_chartDataRaw" EmptyMessage="Sem dados" />
             </MudPaper>
         </MudItem>
 
@@ -41,7 +49,6 @@
                         <thead>
                             <tr style="text-align:left;border-bottom:1px solid rgba(0,0,0,0.08);">
                                 <th style="padding:8px;">Data</th>
-                                <th style="padding:8px;">Descrição</th>
                                 <th style="padding:8px;">Categoria</th>
                                 <th style="padding:8px;">Valor</th>
                             </tr>
@@ -53,7 +60,6 @@
                             {
                                 <tr>
                                     <td style="padding:8px;">@tx.Date.ToString("dd/MM/yyyy")</td>
-                                    <td style="padding:8px;">@tx.Description</td>
                                     <td style="padding:8px;">@tx.CategoryName</td>
                                     <td style="padding:8px;">@string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", tx.Amount)</td>
                                 </tr>
@@ -76,9 +82,15 @@
     [Inject] public TokenService TokenService { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
-    private DashboardSummaryDto? _summary;
+    private Finance.Mobile.Services.DashboardSummaryDto? _summary;
     private string[] _chartLabels = Array.Empty<string>();
-    private MudBlazor.ChartSeries[] _chartDatasets = Array.Empty<MudBlazor.ChartSeries>();
+    // debug
+    private double[] _chartDataRaw = Array.Empty<double>();
+    private int? _filterYear;
+    private int? _filterMonth;
+    private int[] _availableYears = Array.Empty<int>();
+    private int[] _months = Enumerable.Range(1, 12).ToArray();
+    private DateTime _current = DateTime.Now;
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,11 +108,28 @@
             if (dto != null)
             {
                 _summary = dto;
-                _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
-                var data = dto.Categories.Select(c => (double)c.Amount).ToArray();
-                _chartDatasets = new[] { new MudBlazor.ChartSeries { Name = "Gastos", Data = data } };
-                // ensure UI updates
-                StateHasChanged();
+
+                // prepare labels and data
+                var labels = dto.Categories.Select(c => c.Name).ToArray();
+                var data = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+
+                // update UI on the renderer thread and force chart re-render with @key
+                await InvokeAsync(() =>
+                {
+                    if (data.All(d => d == 0))
+                    {
+                        _chartLabels = Array.Empty<string>();
+                        _chartDataRaw = Array.Empty<double>();
+                    }
+                    else
+                    {
+                        _chartLabels = labels;
+                        _chartDataRaw = data;
+                    }
+                    StateHasChanged();
+                });
+                // populate available years based on transactions
+                _availableYears = dto.LatestTransactions.Select(t => t.Date.Year).Distinct().OrderByDescending(y => y).ToArray();
             }
             else
             {
@@ -115,5 +144,79 @@
         }
     }
 
-    
+    private string GetCurrentFilterLabel()
+    {
+        return _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+    }
+
+    private async Task PrevMonth()
+    {
+        _current = _current.AddMonths(-1);
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task NextMonth()
+    {
+        _current = _current.AddMonths(1);
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnYearChanged(ChangeEventArgs e)
+    {
+        var v = e?.Value?.ToString();
+        _filterYear = string.IsNullOrEmpty(v) ? null : int.Parse(v!);
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnMonthChanged(ChangeEventArgs e)
+    {
+        var v = e?.Value?.ToString();
+        _filterMonth = string.IsNullOrEmpty(v) ? null : int.Parse(v!);
+        await ApplyFiltersAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        try
+        {
+            var transactions = await Api.GetTransactionsAsync(_filterYear, _filterMonth);
+            var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+            var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+            var balance = totalIncome - totalExpense;
+
+            var categoryTotals = transactions.GroupBy(t => t.CategoryId).Select(g => new { CategoryId = g.Key, Amount = g.Sum(t => t.Amount) }).ToList();
+            var totalByCategories = categoryTotals.Sum(c => Math.Abs(c.Amount));
+
+            var categorySummaries = new List<Finance.Mobile.Services.CategorySummaryDto>();
+            foreach (var c in categoryTotals)
+            {
+                var cat = await Api.GetCategoryByIdAsync(c.CategoryId);
+                var name = cat?.Name ?? "Outros";
+                var percent = totalByCategories == 0 ? 0m : Math.Round((decimal)(Math.Abs(c.Amount) / totalByCategories) * 100m, 2);
+                categorySummaries.Add(new Finance.Mobile.Services.CategorySummaryDto(c.CategoryId, name, c.Amount, percent));
+            }
+
+            var latestList = new List<Finance.Mobile.Services.TransactionSummaryDto>();
+            var latestTxs = transactions.OrderByDescending(t => t.Date).Take(5).ToList();
+            foreach (var t in latestTxs)
+            {
+                var catName = (await Api.GetCategoryByIdAsync(t.CategoryId))?.Name ?? string.Empty;
+                latestList.Add(new Finance.Mobile.Services.TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, catName, t.Amount, t.Type));
+            }
+
+            _summary = new Finance.Mobile.Services.DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latestList);
+            _chartLabels = _summary.Categories.Select(c => c.Name).ToArray();
+            _chartDataRaw = _summary.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+            StateHasChanged();
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
 }

@@ -17,15 +17,15 @@ public static class DashboardEndpoints
             .Produces<DashboardSummaryDto>();
     }
 
-    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo)
+    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, int? year, int? month)
     {
         // get user id from claims
         var userClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
-        Guid userId = Guid.Empty;
-        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var transactions = await transactionRepo.GetByUserIdAsync(userId);
+        var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month);
         var categories = await categoryRepo.GetByUserIdAsync(userId);
 
         var totalIncome = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Income).Sum(t => t.Amount);

@@ -19,7 +19,7 @@
     else
     {
         <MudForm>
-            <MudSelect T="Guid" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
+            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
                 @foreach (var category in _categories)
                 {
                     <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
@@ -61,11 +61,11 @@
 </MudContainer>
 
 @code {
-    [Parameter] public Guid Id { get; set; }
+    [Parameter] public int Id { get; set; }
 
     private List<Category> _categories = new();
     private Transaction? _transaction;
-    private Guid _categoryId;
+    private int _categoryId;
     private decimal _amount;
     private DateTime _date = DateTime.Now;
     private string _description = "";
@@ -110,7 +110,7 @@
 
     private async Task Salvar()
     {
-        if (_categoryId == Guid.Empty)
+        if (_categoryId == 0)
         {
             _message = "Selecione uma categoria";
             _alertSeverity = Severity.Warning;
@@ -122,7 +122,7 @@
             _saving = true;
             await ApiClient.UpdateTransactionAsync(
                 Id,
-                Guid.Empty, // AccountId
+                0, // AccountId
                 _categoryId,
                 _amount,
                 _date,

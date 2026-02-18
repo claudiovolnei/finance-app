@@ -17,7 +17,7 @@ public static class CategoryEndpoints
             .WithSummary("Lista todas as categorias")
             .Produces<List<Finance.Domain.Entities.Category>>();
 
-        group.MapGet("/{id:guid}", GetCategoryById)
+        group.MapGet("/{id:int}", GetCategoryById)
             .WithName("GetCategoryById")
             .WithSummary("Busca uma categoria por ID")
             .Produces<Finance.Domain.Entities.Category>()
@@ -29,14 +29,14 @@ public static class CategoryEndpoints
             .Produces<Finance.Domain.Entities.Category>()
             .Produces(400);
 
-        group.MapPut("/{id:guid}", UpdateCategory)
+        group.MapPut("/{id:int}", UpdateCategory)
             .WithName("UpdateCategory")
             .WithSummary("Atualiza uma categoria existente")
             .Produces(200)
             .Produces(400)
             .Produces(404);
 
-        group.MapDelete("/{id:guid}", DeleteCategory)
+        group.MapDelete("/{id:int}", DeleteCategory)
             .WithName("DeleteCategory")
             .WithSummary("Exclui uma categoria")
             .Produces(200)
@@ -47,21 +47,21 @@ public static class CategoryEndpoints
     private static async Task<IResult> GetAllCategories(HttpContext httpContext, ICategoryRepository repository)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        Guid userId = Guid.Empty;
-        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
         var categories = await repository.GetByUserIdAsync(userId);
         return Results.Ok(categories);
     }
 
-    private static async Task<IResult> GetCategoryById(HttpContext httpContext, Guid id, ICategoryRepository repository)
+    private static async Task<IResult> GetCategoryById(HttpContext httpContext, int id, ICategoryRepository repository)
     {
         var category = await repository.GetByIdAsync(id);
         if (category == null) return Results.NotFound();
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        Guid userId = Guid.Empty;
-        if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
         if (category.UserId != userId) return Results.Unauthorized();
@@ -77,8 +77,8 @@ public static class CategoryEndpoints
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             var category = await useCase.ExecuteAsync(request.Name, userId);
@@ -92,15 +92,15 @@ public static class CategoryEndpoints
 
     private static async Task<IResult> UpdateCategory(
         HttpContext httpContext,
-        Guid id,
+        int id,
         UpdateCategoryUseCase useCase,
         UpdateCategoryRequest request)
     {
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             await useCase.ExecuteAsync(id, request.Name, userId);
@@ -118,14 +118,14 @@ public static class CategoryEndpoints
 
     private static async Task<IResult> DeleteCategory(
         HttpContext httpContext,
-        Guid id,
+        int id,
         DeleteCategoryUseCase useCase)
     {
         try
         {
             var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            Guid userId = Guid.Empty;
-            if (userClaim != null && Guid.TryParse(userClaim.Value, out var parsed))
+            int userId = 0;
+            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
             await useCase.ExecuteAsync(id, userId);

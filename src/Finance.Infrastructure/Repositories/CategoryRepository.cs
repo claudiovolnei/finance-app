@@ -15,13 +15,13 @@ public class CategoryRepository : ICategoryRepository
         _context = context;
     }
 
-    public async Task<Category?> GetByIdAsync(Guid id)
+    public async Task<Category?> GetByIdAsync(int id)
         => await _context.Categories.FindAsync(id);
 
     public Task<List<Category>> GetAllAsync()
         => _context.Categories.ToListAsync();
 
-    public Task<List<Category>> GetByUserIdAsync(Guid userId)
+    public Task<List<Category>> GetByUserIdAsync(int userId)
         => _context.Categories.Where(c => c.UserId == userId).ToListAsync();
 
     public async Task AddAsync(Category category)
@@ -43,7 +43,7 @@ public class CategoryRepository : ICategoryRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(int id)
     {
         var category = await _context.Categories.FindAsync(id);
         if (category != null)

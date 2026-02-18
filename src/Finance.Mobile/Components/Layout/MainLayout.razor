@@ -18,8 +18,6 @@
             <MudIcon Icon="@Icons.Material.Filled.Home" Class="ml-2" />
             <MudText Typo="Typo.h6" Class="ml-2">Meu Financeiro</MudText>
 
-            <MudText Class="ml-4 desktop-only">@_selectedMonth</MudText>
-
             <MudSpacer />
 
             <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
@@ -64,7 +62,6 @@
 @code {
     private bool _drawerOpen = true;
     private MudTheme _theme = new();
-    private string _selectedMonth = "Abril 2024";
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;

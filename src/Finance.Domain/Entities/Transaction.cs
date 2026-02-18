@@ -4,22 +4,22 @@ namespace Finance.Domain.Entities;
 
 public class Transaction : BaseEntity
 {
-    public Guid AccountId { get; private set; }
-    public Guid CategoryId { get; private set; }
+    public int AccountId { get; private set; }
+    public int CategoryId { get; private set; }
     public decimal Amount { get; private set; }
     public DateTime Date { get; private set; }
     public string Description { get; private set; }
     public TransactionType Type { get; private set; }
-    public Guid UserId { get; private set; }
+    public int UserId { get; private set; }
 
     public Transaction(
-        Guid accountId,
-        Guid categoryId,
+        int accountId,
+        int categoryId,
         decimal amount,
         DateTime date,
         string description,
         TransactionType type,
-        Guid userId)
+        int userId)
     {
         AccountId = accountId;
         CategoryId = categoryId;

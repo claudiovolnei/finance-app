@@ -11,7 +11,7 @@ public class DeleteTransactionUseCase
         _repository = repository;
     }
 
-    public async Task ExecuteAsync(Guid id, Guid userId)
+    public async Task ExecuteAsync(int id, int userId)
     {
         var transaction = await _repository.GetByIdAsync(id);
         if (transaction == null)
