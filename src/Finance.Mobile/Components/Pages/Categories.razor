@@ -4,6 +4,7 @@
 @using Finance.Mobile.Services
 @inject FinanceApiClient ApiClient
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Categorias</MudText>
@@ -51,6 +52,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         await LoadCategories();
     }
 
@@ -60,6 +67,11 @@
         {
             _loading = true;
             _categories = await ApiClient.GetCategoriesAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
+            return;
         }
         catch (Exception ex)
         {
@@ -72,24 +84,52 @@
         }
     }
 
-    private void NavigateToAdd()
+    private async void NavigateToAdd()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         Navigation.NavigateTo("/categories/add");
     }
 
     private void NavigateToEdit(int id)
     {
+        _ = EnsureAndNavigateEdit(id);
+    }
+
+    private async Task EnsureAndNavigateEdit(int id)
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         Navigation.NavigateTo($"/categories/edit/{id}");
     }
 
     private async Task DeleteCategory(int id)
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         try
         {
             await ApiClient.DeleteCategoryAsync(id);
             _message = "Categoria excluída com sucesso!";
             _alertSeverity = Severity.Success;
             await LoadCategories();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {

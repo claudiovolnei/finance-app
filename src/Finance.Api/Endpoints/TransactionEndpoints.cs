@@ -51,7 +51,7 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, int? year = null, int? month = null)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         int userId = 0;
@@ -59,15 +59,36 @@ public static class TransactionEndpoints
             userId = parsed;
 
         var transactions = await repository.GetByUserIdAsync(userId, year, month);
-        return Results.Ok(transactions);
+        // fetch categories for the user to map names
+        var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var catMap = categories.ToDictionary(c => c.Id, c => c.Name);
+        var dtos = transactions.Select(t => new Dtos.TransactionResponseDto(
+            t.Id,
+            t.AccountId,
+            t.CategoryId,
+            catMap.TryGetValue(t.CategoryId, out var n) ? n : string.Empty,
+            t.Amount,
+            t.Date,
+            t.Description,
+            t.Type)).ToList();
+        return Results.Ok(dtos);
     }
 
-    private static async Task<IResult> GetTransactionById(int id, ITransactionRepository repository)
+    private static async Task<IResult> GetTransactionById(int id, ITransactionRepository repository, ICategoryRepository categoryRepo)
     {
         var transaction = await repository.GetByIdAsync(id);
         if (transaction == null) return Results.NotFound();
-        // ensure same user
-        return Results.Ok(transaction);
+        var category = await categoryRepo.GetByIdAsync(transaction.CategoryId);
+        var dto = new Dtos.TransactionResponseDto(
+            transaction.Id,
+            transaction.AccountId,
+            transaction.CategoryId,
+            category?.Name ?? string.Empty,
+            transaction.Amount,
+            transaction.Date,
+            transaction.Description,
+            transaction.Type);
+        return Results.Ok(dto);
     }
 
     private static async Task<IResult> CreateTransaction(

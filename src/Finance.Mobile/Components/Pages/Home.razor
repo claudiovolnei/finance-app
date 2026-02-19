@@ -17,7 +17,7 @@
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Success">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.Balance))</MudText>
+                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">

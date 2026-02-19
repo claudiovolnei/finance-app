@@ -44,6 +44,7 @@ public static class MauiProgram
             .ConfigureHttpClient((sp, client) => {
                 var baseUrl = sp.GetRequiredService<ApiBaseUrl>();
                 client.BaseAddress = new Uri(baseUrl.GetAbsoluteUrl(""));
+
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
             .AddHttpMessageHandler<AuthMessageHandler>();

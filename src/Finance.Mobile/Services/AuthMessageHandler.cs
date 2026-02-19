@@ -32,18 +32,8 @@ public class AuthMessageHandler : DelegatingHandler
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            // remove token and redirect to login on main thread
+            // remove token when unauthorized; do not navigate from handler (UI will handle redirect)
             await _tokenService.RemoveTokenAsync();
-            try
-            {
-                MainThread.BeginInvokeOnMainThread(() => {
-                    try { _nav.NavigateTo("/login"); } catch { }
-                });
-            }
-            catch
-            {
-                // ignore navigation errors
-            }
         }
 
         return response;

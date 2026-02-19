@@ -6,10 +6,10 @@
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
     <MudPaper Class="pa-4">
         <MudText Typo="Typo.h5">Login</MudText>
-        <MudTextField @bind-Value="_username" Label="Usuário" />
-        <MudTextField @bind-Value="_password" Label="Senha" InputType="InputType.Password" />
-        <div style="align-content center">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin">Entrar</MudButton>
+        <MudTextField @bind-Value="_username" Label="Usuário" Class="mb-3" />
+        <MudTextField @bind-Value="_password" Label="Senha" InputType="InputType.Password" Class="mb-3" />
+        <div style="display:flex;justify-content:center;margin-top:12px;">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar</MudButton>
         </div>
     </MudPaper>
 </MudContainer>

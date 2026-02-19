@@ -1,0 +1,34 @@
+@page "/profile"
+@using Finance.Mobile.Services
+@inject TokenService TokenService
+@inject NavigationManager Navigation
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
+    <MudPaper Class="pa-4">
+        <MudText Typo="Typo.h5">Perfil</MudText>
+        @if (string.IsNullOrEmpty(_username))
+        {
+            <MudText Typo="Typo.subtitle1" Class="mt-2">Carregando...</MudText>
+        }
+        else
+        {
+            <MudText Typo="Typo.subtitle1" Class="mt-2">@_username</MudText>
+        }
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string? _username;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+        _username = await TokenService.GetUsernameAsync();
+    }
+}

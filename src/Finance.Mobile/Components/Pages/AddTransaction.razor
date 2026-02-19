@@ -9,19 +9,27 @@
     <MudText Typo="Typo.h4" Class="mb-4">Nova Transação</MudText>
 
     <MudForm>
-        <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
-            @foreach (var category in _categories)
-            {
-                <MudSelectItem Value="@category.Id" >@category.Name</MudSelectItem>
-            }
-        </MudSelect>
+        @if (_categories.Any())
+        {
+            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
+                @foreach (var category in _categories)
+                {
+                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                }
+            </MudSelect>
+        }
+        else
+        {
+            <div class="mt-2"><MudProgressLinear Indeterminate="true" Color="Color.Primary" /></div>
+        }
 
         <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
             <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
             <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
         </MudSelect>
 
-        <MudNumericField Label="Valor" @bind-Value="_amount" Variant="Variant.Outlined" Required="true" Class="mt-4" />
+        <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Class="mt-4"
+                      Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
 
         <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" Class="mt-4" />
 
@@ -53,6 +61,7 @@
     private List<Category> _categories = new();
     private int _categoryId;
     private decimal _amount;
+    private string _amountText = "0,00";
     private DateTime _date = DateTime.Now;
     private string _description = "";
     private TransactionType _type = TransactionType.Expense;
@@ -74,6 +83,8 @@
             {
                 _categoryId = _categories.First().Id;
             }
+            // initialize amount text with two decimals
+            _amountText = _amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
         }
         catch (Exception ex)
         {
@@ -93,13 +104,23 @@
 
         try
         {
+            // parse amount text to decimal using pt-BR culture
+            if (!decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var parsedAmount))
+            {
+                _message = "Valor inválido";
+                _alertSeverity = Severity.Error;
+                return;
+            }
+
+            _amount = Math.Round(parsedAmount, 2);
+
             _saving = true;
             await ApiClient.CreateTransactionAsync(
                 0, // AccountId - pode ser implementado depois
                 _categoryId,
                 _amount,
                 _date,
-                _description ?? "",
+                _description ?? string.Empty,
                 _type);
 
             _message = "Transação criada com sucesso!";
@@ -107,6 +128,10 @@
             
             await Task.Delay(1000);
             Navigation.NavigateTo("/transactions");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {
@@ -122,5 +147,37 @@
     private void Cancelar()
     {
         Navigation.NavigateTo("/transactions");
+    }
+
+    private void FormatAmount(FocusEventArgs _)
+    {
+        if (decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v))
+        {
+            _amountText = v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        }
+        else
+        {
+            var normalized = _amountText?.Replace(".", ",");
+            if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v2))
+                _amountText = v2.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        }
+    }
+
+    private void OnAmountInput(ChangeEventArgs e)
+    {
+        var input = e?.Value?.ToString() ?? string.Empty;
+        // keep only digits
+        var digits = new string(input.Where(char.IsDigit).ToArray());
+        if (string.IsNullOrEmpty(digits))
+        {
+            _amountText = "0,00";
+            return;
+        }
+        // interpret digits as cents (right-to-left filling)
+        if (digits.Length == 1)
+            digits = "0" + digits;
+        var cents = long.Parse(digits);
+        var value = cents / 100m;
+        _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     }
 }

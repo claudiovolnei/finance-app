@@ -60,26 +60,40 @@ public class FinanceApiClient
     }
 
     // ========== TRANSACTIONS ==========
-    public async Task<List<Transaction>> GetTransactionsAsync()
+    public async Task<List<TransactionDto>> GetTransactionsAsync()
     {
-        var transactions = await _httpClient.GetFromJsonAsync<List<Transaction>>(Url("transactions"));
-        return transactions ?? new List<Transaction>();
+        var resp = await _httpClient.GetAsync(Url("transactions"));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        resp.EnsureSuccessStatusCode();
+        var transactions = await resp.Content.ReadFromJsonAsync<List<TransactionDto>>();
+        return transactions ?? new List<TransactionDto>();
     }
 
-    public async Task<List<Transaction>> GetTransactionsAsync(int? year, int? month)
+    public async Task<List<TransactionDto>> GetTransactionsAsync(int? year, int? month)
     {
         var url = "transactions";
         var query = new List<string>();
         if (year.HasValue) query.Add($"year={year.Value}");
         if (month.HasValue) query.Add($"month={month.Value}");
         if (query.Any()) url += "?" + string.Join("&", query);
-        var transactions = await _httpClient.GetFromJsonAsync<List<Transaction>>(Url(url));
-        return transactions ?? new List<Transaction>();
+        var resp = await _httpClient.GetAsync(Url(url));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        resp.EnsureSuccessStatusCode();
+        var transactions = await resp.Content.ReadFromJsonAsync<List<TransactionDto>>();
+        return transactions ?? new List<TransactionDto>();
     }
 
-    public async Task<Transaction?> GetTransactionByIdAsync(int id)
+    public async Task<TransactionDto?> GetTransactionByIdAsync(int id)
     {
-        return await _httpClient.GetFromJsonAsync<Transaction>(Url($"transactions/{id}"));
+        var resp = await _httpClient.GetAsync(Url($"transactions/{id}"));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<TransactionDto>();
     }
 
     public async Task CreateTransactionAsync(
@@ -99,6 +113,8 @@ public class FinanceApiClient
             type);
 
         var response = await _httpClient.PostAsJsonAsync(Url("transactions"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
     }
 
@@ -120,31 +136,47 @@ public class FinanceApiClient
             type);
 
         var response = await _httpClient.PutAsJsonAsync(Url($"transactions/{id}"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteTransactionAsync(int id)
     {
         var response = await _httpClient.DeleteAsync(Url($"transactions/{id}"));
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
     }
 
     // ========== CATEGORIES ==========
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var categories = await _httpClient.GetFromJsonAsync<List<Category>>(Url("categories"));
+        var resp = await _httpClient.GetAsync(Url("categories"));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        resp.EnsureSuccessStatusCode();
+        var categories = await resp.Content.ReadFromJsonAsync<List<Category>>();
         return categories ?? new List<Category>();
     }
 
     public async Task<Category?> GetCategoryByIdAsync(int id)
     {
-        return await _httpClient.GetFromJsonAsync<Category>(Url($"categories/{id}"));
+        var resp = await _httpClient.GetAsync(Url($"categories/{id}"));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<Category>();
     }
 
     public async Task<Category> CreateCategoryAsync(string name)
     {
         var request = new CreateCategoryRequest(name);
         var response = await _httpClient.PostAsJsonAsync(Url("categories"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<Category>() ?? throw new Exception("Failed to create category");
     }
@@ -153,12 +185,16 @@ public class FinanceApiClient
     {
         var request = new UpdateCategoryRequest(name);
         var response = await _httpClient.PutAsJsonAsync(Url($"categories/{id}"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task DeleteCategoryAsync(int id)
     {
         var response = await _httpClient.DeleteAsync(Url($"categories/{id}"));
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
         response.EnsureSuccessStatusCode();
     }
 

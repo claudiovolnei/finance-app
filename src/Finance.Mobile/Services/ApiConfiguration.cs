@@ -6,13 +6,13 @@ public static class ApiConfiguration
     public static string GetDefaultBaseUrl()
     {
         if (DeviceInfo.Platform == DevicePlatform.Android)
-            return "http://10.0.2.2:5102";
+            return "http://my-finance.runasp.net";
         if (DeviceInfo.Platform == DevicePlatform.iOS)
-            return "http://localhost:5102";
+            return "http://my-finance.runasp.net";
         if (DeviceInfo.Platform == DevicePlatform.WinUI)
-            return "http://localhost:5102";
+            return "http://my-finance.runasp.net";
         if (DeviceInfo.Platform == DevicePlatform.MacCatalyst)
-            return "http://localhost:5102";
-        return "http://localhost:5102";
+            return "http://my-finance.runasp.net";
+        return "http://my-finance.runasp.net";
     }
 }

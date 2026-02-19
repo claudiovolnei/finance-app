@@ -17,3 +17,14 @@ public record UpdateTransactionRequest(
     DateTime Date,
     string? Description,
     TransactionType Type);
+
+// DTO returned to clients including category name for display
+public record TransactionResponseDto(
+    int Id,
+    int AccountId,
+    int CategoryId,
+    string CategoryName,
+    decimal Amount,
+    DateTime Date,
+    string? Description,
+    TransactionType Type);

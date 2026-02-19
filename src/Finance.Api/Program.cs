@@ -5,6 +5,8 @@ using Finance.Application.Repositories;
 using Finance.Application.UseCases;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,8 +47,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Configure database provider: use SQLite for development (local) and SQL Server for other environments.
+var financeConn = builder.Configuration.GetConnectionString("FinanceDb");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlite("Data Source=finance.db"));
+       opt.UseSqlServer(financeConn));
 
 // Repositories
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
@@ -86,6 +91,9 @@ builder.Services.AddAuthentication(options =>
 // Add authorization services
 builder.Services.AddAuthorization();
 
+// Simple health checks registration
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 app.UseCors();
@@ -99,14 +107,30 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-// Map endpoints (includes dashboard)
 app.MapEndpoints();
 
-// OpenAPI/Swagger UI (development)
-if (app.Environment.IsDevelopment())
+// Health endpoint - simple JSON summary
+app.MapHealthChecks("/health", new HealthCheckOptions
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new
+        {
+            status = report.Status.ToString(),
+            totalDurationMs = report.TotalDuration.TotalMilliseconds,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        });
+        await context.Response.WriteAsync(result);
+    }
+});
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.Run();

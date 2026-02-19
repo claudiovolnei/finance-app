@@ -4,6 +4,7 @@
 @using Finance.Mobile.Services
 @inject FinanceApiClient ApiClient
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Transações</MudText>
@@ -25,14 +26,14 @@
         <MudTable Items="@_transactions" Hover="true" Dense="true" Striped="true">
             <HeaderContent>
                 <MudTh>Data</MudTh>
-                <MudTh>Descrição</MudTh>
+                <MudTh>Categoria</MudTh>
                 <MudTh>Valor</MudTh>
                 <MudTh>Tipo</MudTh>
                 <MudTh>Ações</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
-                <MudTd DataLabel="Descrição">@context.Description</MudTd>
+                <MudTd DataLabel="Categoria">@context.CategoryName</MudTd>
                 <MudTd DataLabel="Valor">@context.Amount.ToString("C")</MudTd>
                 <MudTd DataLabel="Tipo">
                     <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Size="Size.Small">
@@ -54,13 +55,19 @@
 </MudContainer>
 
 @code {
-    private List<Transaction>? _transactions;
+    private List<Finance.Mobile.Services.TransactionDto>? _transactions;
     private bool _loading = true;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         await LoadTransactions();
     }
 
@@ -70,6 +77,11 @@
         {
             _loading = true;
             _transactions = await ApiClient.GetTransactionsAsync();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Navigation.NavigateTo("/login");
+            return;
         }
         catch (Exception ex)
         {
@@ -82,18 +94,43 @@
         }
     }
 
-    private void NavigateToAdd()
+    private async void NavigateToAdd()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         Navigation.NavigateTo("/transactions/add");
     }
 
     private void NavigateToEdit(int id)
     {
+        // guard: ensure user still logged in
+        _ = EnsureAndNavigateEdit(id);
+    }
+
+    private async Task EnsureAndNavigateEdit(int id)
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         Navigation.NavigateTo($"/transactions/edit/{id}");
     }
 
     private async Task DeleteTransaction(int id)
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         try
         {
             await ApiClient.DeleteTransactionAsync(id);
