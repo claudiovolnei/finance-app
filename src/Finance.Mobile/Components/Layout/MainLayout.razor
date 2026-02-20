@@ -18,13 +18,15 @@
             <MudIcon Icon="@Icons.Material.Filled.Home" Class="ml-2" />
             <MudText Typo="Typo.h6" Class="ml-2">Meu Financeiro</MudText>
 
+            <MudText Class="ml-4 desktop-only">@_selectedMonth</MudText>
+
             <MudSpacer />
 
             <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
 
             <MudMenu OffsetY="true">
                 <ActivatorContent>
-                    <MudAvatar Size="Size.Medium" Class="ml-2" Text="@_avatarInitial" />
+                    <MudAvatar Size="Size.Medium" Class="ml-2" Text="JC" />
                 </ActivatorContent>
                 <ChildContent>
                     <MudMenuItem OnClick="GoToProfile">Perfil</MudMenuItem>
@@ -45,20 +47,7 @@
         <MudMainContent Class="mud-main-content-full">
             <MudContainer MaxWidth="MaxWidth.Large" Class="finance-main-container">
                 <div class="main-container">
-                    @if (!_checkedAuth)
-                    {
-                        <div style="display:flex;justify-content:center;padding:24px;">
-                            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
-                        </div>
-                    }
-                    else if (!_isAuthenticated && _currentRelativeUri != "login" && _currentRelativeUri != "auth/register")
-                    {
-                        <!-- navigation to login is handled in OnInitializedAsync; do not render body -->
-                    }
-                    else
-                    {
-                        @Body
-                    }
+                    @Body
                 </div>
             </MudContainer>
         </MudMainContent>
@@ -75,32 +64,17 @@
 @code {
     private bool _drawerOpen = true;
     private MudTheme _theme = new();
-    private bool _checkedAuth = false;
-    private bool _isAuthenticated = false;
-    private string _currentRelativeUri = string.Empty;
-    private string _avatarInitial = "";
+    private string _selectedMonth = "Abril 2024";
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        // Check authentication once and block rendering until complete
-        _currentRelativeUri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+        // Redirect to login if no token and not already on auth pages
         var token = await TokenService.GetTokenAsync();
-        _isAuthenticated = !string.IsNullOrEmpty(token);
-        if (_isAuthenticated)
-        {
-            var name = await TokenService.GetUsernameAsync();
-            if (!string.IsNullOrEmpty(name))
-            {
-                _avatarInitial = name.Trim()[0].ToString().ToUpperInvariant();
-            }
-        }
-        _checkedAuth = true;
-        StateHasChanged();
-
-        if (!_isAuthenticated && _currentRelativeUri != "login" && _currentRelativeUri != "auth/register")
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+        if (string.IsNullOrEmpty(token) && uri != "login" && uri != "auth/register")
         {
             Navigation.NavigateTo("/login");
         }
