@@ -18,15 +18,17 @@
             <MudIcon Icon="@Icons.Material.Filled.Home" Class="ml-2" />
             <MudText Typo="Typo.h6" Class="ml-2">Meu Financeiro</MudText>
 
-            <MudText Class="ml-4 desktop-only">@_selectedMonth</MudText>
-
             <MudSpacer />
 
             <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
 
             <MudMenu OffsetY="true">
                 <ActivatorContent>
-                    <MudAvatar Size="Size.Medium" Class="ml-2" Text="JC" />
+                    <MudAvatar Size="Size.Medium"
+                               Class="ml-2 avatar-letter"
+                               Color="@AvatarColor">
+                            @AvatarLetter
+                    </MudAvatar>
                 </ActivatorContent>
                 <ChildContent>
                     <MudMenuItem OnClick="GoToProfile">Perfil</MudMenuItem>
@@ -64,7 +66,7 @@
 @code {
     private bool _drawerOpen = true;
     private MudTheme _theme = new();
-    private string _selectedMonth = "Abril 2024";
+    private string? _name;
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
@@ -78,6 +80,34 @@
         {
             Navigation.NavigateTo("/login");
         }
+
+        _name = await TokenService.GetUsernameAsync();
+    }
+
+    private string AvatarLetter =>
+        string.IsNullOrWhiteSpace(_name)
+            ? "?"
+            : _name.Trim().Substring(0, 1).ToUpper();
+
+    private Color AvatarColor =>
+        string.IsNullOrWhiteSpace(_name)
+            ? Color.Default
+            : GetColorFromName(_name);
+
+    private Color GetColorFromName(string name)
+    {
+        var colors = new[]
+        {
+            Color.Primary,
+            Color.Secondary,
+            Color.Tertiary,
+            Color.Info,
+            Color.Success,
+            Color.Warning
+        };
+
+        var hash = name.GetHashCode();
+        return colors[Math.Abs(hash) % colors.Length];
     }
 
     private void DrawerToggle() => _drawerOpen = !_drawerOpen;

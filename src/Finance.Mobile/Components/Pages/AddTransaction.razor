@@ -4,6 +4,7 @@
 @using Finance.Mobile.Services
 @inject FinanceApiClient ApiClient
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Nova Transação</MudText>
@@ -71,6 +72,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
         await LoadCategories();
     }
 

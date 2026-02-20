@@ -4,6 +4,7 @@
 @using Finance.Mobile.Services
 @inject FinanceApiClient ApiClient
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Nova Categoria</MudText>
@@ -33,11 +34,21 @@
     }
 </MudContainer>
 
-@code {
+    @code {
     private string _name = "";
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private bool _saving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+    }
 
     private async Task Salvar()
     {

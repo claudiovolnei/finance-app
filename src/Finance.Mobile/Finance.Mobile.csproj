@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <!-- Build only the Windows TFM by default to avoid requiring MAUI mobile workloads in CI environments. -->
-        <TargetFrameworks>net10.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks>net10.0-android;net10.0-windows10.0.19041.0</TargetFrameworks>
 
         <!-- Android: ANDROID_HOME ou local padrão (Android Studio). Java: JAVA_HOME para o JDK 11+. -->
         <AndroidSdkDirectory Condition="'$(AndroidSdkDirectory)' == '' and '$(ANDROID_HOME)' != ''">$(ANDROID_HOME)</AndroidSdkDirectory>

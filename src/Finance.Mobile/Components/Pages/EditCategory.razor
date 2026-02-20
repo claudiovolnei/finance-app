@@ -1,9 +1,10 @@
-@page "/categories/edit/{Id}"
+@page "/categories/edit/{Id:int}"
 @using MudBlazor
 @using Finance.Domain.Entities
 @using Finance.Mobile.Services
 @inject FinanceApiClient ApiClient
 @inject NavigationManager Navigation
+@inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Editar Categoria</MudText>
@@ -56,6 +57,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         await LoadCategory();
     }
 

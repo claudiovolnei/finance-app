@@ -293,3 +293,8 @@ html, body {
         z-index: 1;
     }
 }
+
+.avatar-letter {
+    color: white;
+    font-weight: 600;
+}
