@@ -12,4 +12,9 @@ public class Category : BaseEntity
         Name = name;
         UserId = userId;
     }
+
+    public void UpdateName(string name)
+    {
+        Name = name;
+    }
 }

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Finance.Domain.Entities;
 using Finance.Infrastructure.Persistence;
 using Finance.Application.Repositories;
-using System.Reflection;
 
 namespace Finance.Infrastructure.Repositories;
 
@@ -32,9 +31,8 @@ public class AccountRepository : IAccountRepository
 
     public async Task UpdateAsync(Account account, string newName, decimal newInitialBalance)
     {
-        typeof(Account).GetProperty("Name", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(account, newName);
-        typeof(Account).GetProperty("InitialBalance", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(account, newInitialBalance);
-        
+        account.Update(newName, newInitialBalance);
+
         _context.Accounts.Update(account);
         await _context.SaveChangesAsync();
     }

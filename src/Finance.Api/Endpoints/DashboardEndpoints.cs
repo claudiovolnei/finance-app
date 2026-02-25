@@ -13,7 +13,7 @@ public static class DashboardEndpoints
 
         group.MapGet("/summary", GetSummary)
             .WithName("GetDashboardSummary")
-            .WithSummary("Retorna resumo do dashboard (saldo, receitas, despesas, categorias, últimos lançamentos)")
+            .WithSummary("Retorna resumo do dashboard (saldo, receitas, despesas, categorias, Ãºltimos lanÃ§amentos)")
             .Produces<DashboardSummaryDto>();
     }
 
@@ -27,6 +27,7 @@ public static class DashboardEndpoints
 
         var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month);
         var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
 
         var totalIncome = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Income).Sum(t => t.Amount);
         var totalExpense = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Expense).Sum(t => t.Amount);
@@ -42,8 +43,7 @@ public static class DashboardEndpoints
         var categorySummaries = new List<CategorySummaryDto>();
         foreach (var c in categoryTotals)
         {
-            var cat = await categoryRepo.GetByIdAsync(c.CategoryId);
-            var name = cat?.Name ?? "Outros";
+            var name = categoryMap.TryGetValue(c.CategoryId, out var categoryName) ? categoryName : "Outros";
             var percent = totalByCategories == 0 ? 0m : Math.Round((decimal)(Math.Abs(c.Amount) / totalByCategories) * 100m, 2);
             categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent));
         }
@@ -52,8 +52,8 @@ public static class DashboardEndpoints
         var latest = new List<TransactionSummaryDto>();
         foreach (var t in latestTxs)
         {
-            var cat = await categoryRepo.GetByIdAsync(t.CategoryId);
-            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, cat?.Name ?? string.Empty, t.Amount, t.Type));
+            var categoryName = categoryMap.TryGetValue(t.CategoryId, out var category) ? category : string.Empty;
+            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, categoryName, t.Amount, t.Type));
         }
 
         var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latest);

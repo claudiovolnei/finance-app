@@ -15,10 +15,10 @@ public class DeleteCategoryUseCase
     {
         var category = await _repository.GetByIdAsync(id);
         if (category == null)
-            throw new InvalidOperationException($"Category with id {id} not found");
+            throw new KeyNotFoundException($"Category with id {id} not found");
 
         if (category.UserId != userId)
-            throw new InvalidOperationException("Not authorized");
+            throw new UnauthorizedAccessException("Not authorized");
 
         await _repository.DeleteAsync(id);
     }
