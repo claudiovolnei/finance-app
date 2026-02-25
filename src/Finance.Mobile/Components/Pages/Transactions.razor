@@ -87,7 +87,7 @@
         await LoadTransactions();
     }
 
-    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
 
     private async Task PrevMonth()
     {
