@@ -64,7 +64,7 @@ public static class CategoryEndpoints
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        if (category.UserId != userId) return Results.Unauthorized();
+        if (category.UserId != userId) return Results.Forbid();
 
         return Results.Ok(category);
     }
@@ -106,7 +106,11 @@ public static class CategoryEndpoints
             await useCase.ExecuteAsync(id, request.Name, userId);
             return Results.Ok(new { message = "Category updated successfully" });
         }
-        catch (InvalidOperationException ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (KeyNotFoundException ex)
         {
             return Results.NotFound(new { error = ex.Message });
         }
@@ -131,7 +135,11 @@ public static class CategoryEndpoints
             await useCase.ExecuteAsync(id, userId);
             return Results.Ok(new { message = "Category deleted successfully" });
         }
-        catch (InvalidOperationException ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (KeyNotFoundException ex)
         {
             return Results.NotFound(new { error = ex.Message });
         }

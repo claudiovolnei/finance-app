@@ -51,14 +51,14 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null, int? accountId = null)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         int userId = 0;
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var transactions = await repository.GetByUserIdAsync(userId, year, month);
+        var transactions = await repository.GetByUserIdAsync(userId, year, month, accountId);
         // fetch categories for the user to map names
         var categories = await categoryRepo.GetByUserIdAsync(userId);
         var catMap = categories.ToDictionary(c => c.Id, c => c.Name);
@@ -74,10 +74,19 @@ public static class TransactionEndpoints
         return Results.Ok(dtos);
     }
 
-    private static async Task<IResult> GetTransactionById(int id, ITransactionRepository repository, ICategoryRepository categoryRepo)
+    private static async Task<IResult> GetTransactionById(HttpContext httpContext, int id, ITransactionRepository repository, ICategoryRepository categoryRepo)
     {
         var transaction = await repository.GetByIdAsync(id);
         if (transaction == null) return Results.NotFound();
+
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        if (transaction.UserId != userId)
+            return Results.Forbid();
+
         var category = await categoryRepo.GetByIdAsync(transaction.CategoryId);
         var dto = new Dtos.TransactionResponseDto(
             transaction.Id,
@@ -145,7 +154,11 @@ public static class TransactionEndpoints
 
             return Results.Ok(new { message = "Transaction updated successfully" });
         }
-        catch (InvalidOperationException ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (KeyNotFoundException ex)
         {
             return Results.NotFound(new { error = ex.Message });
         }
@@ -170,7 +183,11 @@ public static class TransactionEndpoints
             await useCase.ExecuteAsync(id, userId);
             return Results.Ok(new { message = "Transaction deleted successfully" });
         }
-        catch (InvalidOperationException ex)
+        catch (UnauthorizedAccessException)
+        {
+            return Results.Forbid();
+        }
+        catch (KeyNotFoundException ex)
         {
             return Results.NotFound(new { error = ex.Message });
         }
