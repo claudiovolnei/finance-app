@@ -14,4 +14,10 @@ public class Account : BaseEntity
         InitialBalance = initialBalance;
         UserId = userId;
     }
+
+    public void Update(string name, decimal initialBalance)
+    {
+        Name = name;
+        InitialBalance = initialBalance;
+    }
 }

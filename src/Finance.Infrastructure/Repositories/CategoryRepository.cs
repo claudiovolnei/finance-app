@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Finance.Domain.Entities;
 using Finance.Infrastructure.Persistence;
 using Finance.Application.Repositories;
-using System.Reflection;
 
 namespace Finance.Infrastructure.Repositories;
 
@@ -32,13 +31,8 @@ public class CategoryRepository : ICategoryRepository
 
     public async Task UpdateAsync(Category category, string newName)
     {
-        // Usar reflection para atualizar propriedade privada
-        var nameProperty = typeof(Category).GetProperty("Name", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (nameProperty != null)
-        {
-            nameProperty.SetValue(category, newName);
-        }
-        
+        category.UpdateName(newName);
+
         _context.Categories.Update(category);
         await _context.SaveChangesAsync();
     }

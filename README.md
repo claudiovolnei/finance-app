@@ -24,7 +24,7 @@ FinanceApp/
 |--------|-----------|
 | **Finance.Domain** | Entidades (`Account`, `Category`, `Transaction`), enums e base comum. Sem dependências externas. |
 | **Finance.Application** | Orquestração e regras de aplicação. Depende apenas do Domain. |
-| **Finance.Infrastructure** | Acesso a dados (Entity Framework Core, SQLite). Depende da Application. |
+| **Finance.Infrastructure** | Acesso a dados (Entity Framework Core, SQL Server). Depende da Application. |
 | **Finance.Api** | API HTTP com OpenAPI/Swagger. Consome Application e Infrastructure. |
 | **Finance.Mobile** | App .NET MAUI com Blazor Hybrid e MudBlazor. **Consome a API REST via HTTP** (não usa banco local). |
 
@@ -42,7 +42,7 @@ Todas as entidades herdam de `BaseEntity` (`Id`, `CreatedAt`).
 
 - **.NET 10**
 - **ASP.NET Core** – API com OpenAPI
-- **Entity Framework Core 10** + **SQLite**
+- **Entity Framework Core 10** + **SQL Server**
 - **.NET MAUI** – App móvel/desktop (Android, iOS, Windows, Mac Catalyst)
 - **Blazor Hybrid** – UI no MAUI com componentes Blazor
 - **MudBlazor** – Componentes UI no app móvel
@@ -79,7 +79,15 @@ Se ao compilar para Android aparecer *"Não foi possível encontrar o diretório
 
 ### Banco de dados e Migrations
 
-O banco SQLite é criado automaticamente na primeira execução da API através de migrations do Entity Framework Core.
+O banco SQL Server é criado/atualizado automaticamente na primeira execução da API através de migrations do Entity Framework Core.
+
+Antes de rodar a API, configure a connection string `ConnectionStrings:FinanceDb` em `src/Finance.Api/appsettings.Development.json` (ou via variável de ambiente/secrets), por exemplo:
+
+```json
+"ConnectionStrings": {
+  "FinanceDb": "Server=localhost;Database=FinanceDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
+}
+```
 
 Para criar uma nova migration:
 ```bash

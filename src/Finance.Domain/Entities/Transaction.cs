@@ -29,6 +29,22 @@ public class Transaction : BaseEntity
         Type = type;
         UserId = userId;
     }
+
+    public void Update(
+        int accountId,
+        int categoryId,
+        decimal amount,
+        DateTime date,
+        string description,
+        TransactionType type)
+    {
+        AccountId = accountId;
+        CategoryId = categoryId;
+        Amount = amount;
+        Date = date;
+        Description = description;
+        Type = type;
+    }
 }
 
 public enum TransactionType

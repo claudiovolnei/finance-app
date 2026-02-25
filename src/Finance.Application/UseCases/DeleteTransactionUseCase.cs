@@ -15,10 +15,10 @@ public class DeleteTransactionUseCase
     {
         var transaction = await _repository.GetByIdAsync(id);
         if (transaction == null)
-            throw new InvalidOperationException($"Transaction with id {id} not found");
+            throw new KeyNotFoundException($"Transaction with id {id} not found");
 
         if (transaction.UserId != userId)
-            throw new InvalidOperationException("Not authorized");
+            throw new UnauthorizedAccessException("Not authorized");
 
         await _repository.DeleteAsync(id);
     }

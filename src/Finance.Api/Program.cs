@@ -47,8 +47,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure database provider: use SQLite for development (local) and SQL Server for other environments.
+// Configure database provider (SQL Server)
 var financeConn = builder.Configuration.GetConnectionString("FinanceDb");
+if (string.IsNullOrWhiteSpace(financeConn))
+    throw new InvalidOperationException("ConnectionStrings:FinanceDb not configured");
 
 builder.Services.AddDbContext<AppDbContext>(opt =>
        opt.UseSqlServer(financeConn));
@@ -73,17 +75,22 @@ builder.Services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
 })
-    .AddJwtBearer(options =>
+.AddJwtBearer(options =>
     {
-        var key = builder.Configuration["Jwt:Key"] ?? "please-change-this-key";
+        var key = builder.Configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key not configured");
+        var issuer = builder.Configuration["Jwt:Issuer"] ?? "FinanceApi";
+        var audience = builder.Configuration["Jwt:Audience"] ?? "FinanceMobile";
         var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key));
 
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
             IssuerSigningKey = signingKey
         };
     });
