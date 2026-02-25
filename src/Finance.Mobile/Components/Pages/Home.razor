@@ -3,13 +3,7 @@
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
 
-<MudItem xs="12" class="mt-2">
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="PrevMonth" />
-        <MudText Typo="Typo.subtitle1">@GetCurrentFilterLabel()</MudText>
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos" OnClick="NextMonth" />
-    </div>
-</MudItem>
+<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
@@ -105,7 +99,7 @@
         await LoadSummaryAsync();
     }
 
-    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
 
     private async Task PrevMonth()
     {
@@ -136,7 +130,7 @@
 
             _summary = dto;
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
-            _chartDataRaw = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+            _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
             await InvokeAsync(StateHasChanged);
         }
         catch
