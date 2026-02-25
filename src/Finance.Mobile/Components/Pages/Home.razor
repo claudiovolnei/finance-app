@@ -1,8 +1,8 @@
 @page "/"
+@implements IDisposable
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
 
-<!-- Global month/year selector for the whole Home page -->
 <MudItem xs="12" class="mt-2">
     <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
         <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="PrevMonth" />
@@ -13,7 +13,6 @@
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
-        <!-- Top info cards: Saldo full width, Receitas and Despesas side by side on larger screens -->
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
@@ -33,14 +32,12 @@
             </MudPaper>
         </MudItem>
 
-        <!-- Gastos por Categoria (chart placeholder) -->
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
                 <CategoryBarChart Labels="@_chartLabels" Values="@_chartDataRaw" EmptyMessage="Sem dados" />
             </MudPaper>
         </MudItem>
 
-        <!-- Últimos Lançamentos -->
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
                 <MudText Typo="Typo.subtitle1">Últimos Lançamentos</MudText>
@@ -80,81 +77,42 @@
 @code {
     [Inject] public FinanceApiClient Api { get; set; } = default!;
     [Inject] public TokenService TokenService { get; set; } = default!;
+    [Inject] public AccountSelectionState AccountState { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
-    private Finance.Mobile.Services.DashboardSummaryDto? _summary;
+    private DashboardSummaryDto? _summary;
     private string[] _chartLabels = Array.Empty<string>();
-    // debug
     private double[] _chartDataRaw = Array.Empty<double>();
     private int? _filterYear;
     private int? _filterMonth;
-    private int[] _availableYears = Array.Empty<int>();
-    private int[] _months = Enumerable.Range(1, 12).ToArray();
     private DateTime _current = DateTime.Now;
 
     protected override async Task OnInitializedAsync()
     {
+        AccountState.OnChange += HandleAccountChanged;
+
         var token = await TokenService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
             Navigation.NavigateTo("/login");
             return;
         }
+
         Api.SetBearerToken(token);
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
 
-        try
-        {
-            var dto = await Api.GetDashboardSummaryAsync();
-            if (dto != null)
-            {
-                _summary = dto;
-
-                // prepare labels and data
-                var labels = dto.Categories.Select(c => c.Name).ToArray();
-                var data = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
-
-                // update UI on the renderer thread and force chart re-render with @key
-                await InvokeAsync(() =>
-                {
-                    if (data.All(d => d == 0))
-                    {
-                        _chartLabels = Array.Empty<string>();
-                        _chartDataRaw = Array.Empty<double>();
-                    }
-                    else
-                    {
-                        _chartLabels = labels;
-                        _chartDataRaw = data;
-                    }
-                    StateHasChanged();
-                });
-                // populate available years based on transactions
-                _availableYears = dto.LatestTransactions.Select(t => t.Date.Year).Distinct().OrderByDescending(y => y).ToArray();
-            }
-            else
-            {
-                // API returned unauthorized or no data — redirect to login
-                Navigation.NavigateTo("/login");
-                return;
-            }
-        }
-        catch
-        {
-            // ignore
-        }
+        await LoadSummaryAsync();
     }
 
-    private string GetCurrentFilterLabel()
-    {
-        return _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
-    }
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
 
     private async Task PrevMonth()
     {
         _current = _current.AddMonths(-1);
         _filterYear = _current.Year;
         _filterMonth = _current.Month;
-        await ApplyFiltersAsync();
+        await LoadSummaryAsync();
     }
 
     private async Task NextMonth()
@@ -162,56 +120,24 @@
         _current = _current.AddMonths(1);
         _filterYear = _current.Year;
         _filterMonth = _current.Month;
-        await ApplyFiltersAsync();
+        await LoadSummaryAsync();
     }
 
-    private async Task OnYearChanged(ChangeEventArgs e)
-    {
-        var v = e?.Value?.ToString();
-        _filterYear = string.IsNullOrEmpty(v) ? null : int.Parse(v!);
-        await ApplyFiltersAsync();
-    }
-
-    private async Task OnMonthChanged(ChangeEventArgs e)
-    {
-        var v = e?.Value?.ToString();
-        _filterMonth = string.IsNullOrEmpty(v) ? null : int.Parse(v!);
-        await ApplyFiltersAsync();
-    }
-
-    private async Task ApplyFiltersAsync()
+    private async Task LoadSummaryAsync()
     {
         try
         {
-            var transactions = await Api.GetTransactionsAsync(_filterYear, _filterMonth);
-            var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
-            var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
-            var balance = totalIncome - totalExpense;
-
-            var categoryTotals = transactions.GroupBy(t => t.CategoryId).Select(g => new { CategoryId = g.Key, Amount = g.Sum(t => t.Amount) }).ToList();
-            var totalByCategories = categoryTotals.Sum(c => Math.Abs(c.Amount));
-
-            var categorySummaries = new List<Finance.Mobile.Services.CategorySummaryDto>();
-            foreach (var c in categoryTotals)
+            var dto = await Api.GetDashboardSummaryAsync(_filterYear, _filterMonth, AccountState.SelectedAccountId);
+            if (dto == null)
             {
-                var cat = await Api.GetCategoryByIdAsync(c.CategoryId);
-                var name = cat?.Name ?? "Outros";
-                var percent = totalByCategories == 0 ? 0m : Math.Round((decimal)(Math.Abs(c.Amount) / totalByCategories) * 100m, 2);
-                categorySummaries.Add(new Finance.Mobile.Services.CategorySummaryDto(c.CategoryId, name, c.Amount, percent));
+                Navigation.NavigateTo("/login");
+                return;
             }
 
-            var latestList = new List<Finance.Mobile.Services.TransactionSummaryDto>();
-            var latestTxs = transactions.OrderByDescending(t => t.Date).Take(5).ToList();
-            foreach (var t in latestTxs)
-            {
-                var catName = (await Api.GetCategoryByIdAsync(t.CategoryId))?.Name ?? string.Empty;
-                latestList.Add(new Finance.Mobile.Services.TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, catName, t.Amount, t.Type));
-            }
-
-            _summary = new Finance.Mobile.Services.DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latestList);
-            _chartLabels = _summary.Categories.Select(c => c.Name).ToArray();
-            _chartDataRaw = _summary.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
-            StateHasChanged();
+            _summary = dto;
+            _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
+            _chartDataRaw = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+            await InvokeAsync(StateHasChanged);
         }
         catch
         {
@@ -219,4 +145,13 @@
         }
     }
 
+    private async void HandleAccountChanged()
+    {
+        await LoadSummaryAsync();
+    }
+
+    public void Dispose()
+    {
+        AccountState.OnChange -= HandleAccountChanged;
+    }
 }

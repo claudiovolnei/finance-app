@@ -26,9 +26,15 @@ public class FinanceApiClient
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 
-    public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync()
+    public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync(int? year = null, int? month = null, int? accountId = null)
     {
-        var resp = await _httpClient.GetAsync(Url($"dashboard/summary"));
+        var query = new List<string>();
+        if (year.HasValue) query.Add($"year={year.Value}");
+        if (month.HasValue) query.Add($"month={month.Value}");
+        if (accountId.HasValue) query.Add($"accountId={accountId.Value}");
+        var path = "dashboard/summary" + (query.Any() ? $"?{string.Join("&", query)}" : string.Empty);
+
+        var resp = await _httpClient.GetAsync(Url(path));
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             return null;
 
@@ -60,9 +66,10 @@ public class FinanceApiClient
     }
 
     // ========== TRANSACTIONS ==========
-    public async Task<List<TransactionDto>> GetTransactionsAsync()
+    public async Task<List<TransactionDto>> GetTransactionsAsync(int? accountId = null)
     {
-        var resp = await _httpClient.GetAsync(Url("transactions"));
+        var path = "transactions" + (accountId.HasValue ? $"?accountId={accountId.Value}" : string.Empty);
+        var resp = await _httpClient.GetAsync(Url(path));
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
         resp.EnsureSuccessStatusCode();
@@ -70,12 +77,13 @@ public class FinanceApiClient
         return transactions ?? new List<TransactionDto>();
     }
 
-    public async Task<List<TransactionDto>> GetTransactionsAsync(int? year, int? month)
+    public async Task<List<TransactionDto>> GetTransactionsAsync(int? year, int? month, int? accountId = null)
     {
         var url = "transactions";
         var query = new List<string>();
         if (year.HasValue) query.Add($"year={year.Value}");
         if (month.HasValue) query.Add($"month={month.Value}");
+        if (accountId.HasValue) query.Add($"accountId={accountId.Value}");
         if (query.Any()) url += "?" + string.Join("&", query);
         var resp = await _httpClient.GetAsync(Url(url));
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)

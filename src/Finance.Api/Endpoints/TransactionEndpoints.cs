@@ -51,14 +51,14 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null, int? accountId = null)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         int userId = 0;
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var transactions = await repository.GetByUserIdAsync(userId, year, month);
+        var transactions = await repository.GetByUserIdAsync(userId, year, month, accountId);
         // fetch categories for the user to map names
         var categories = await categoryRepo.GetByUserIdAsync(userId);
         var catMap = categories.ToDictionary(c => c.Id, c => c.Name);

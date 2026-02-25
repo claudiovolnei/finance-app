@@ -20,13 +20,15 @@ public class TransactionRepository : ITransactionRepository
     public Task<List<Transaction>> GetAllAsync()
         => _context.Transactions.ToListAsync();
 
-    public Task<List<Transaction>> GetByUserIdAsync(int userId, int? year = null, int? month = null)
+    public Task<List<Transaction>> GetByUserIdAsync(int userId, int? year = null, int? month = null, int? accountId = null)
     {
         var q = _context.Transactions.Where(t => t.UserId == userId).AsQueryable();
         if (year.HasValue)
             q = q.Where(t => t.Date.Year == year.Value);
         if (month.HasValue)
             q = q.Where(t => t.Date.Month == month.Value);
+        if (accountId.HasValue)
+            q = q.Where(t => t.AccountId == accountId.Value);
         return q.ToListAsync();
     }
 

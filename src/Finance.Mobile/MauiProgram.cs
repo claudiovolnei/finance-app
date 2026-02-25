@@ -38,6 +38,8 @@ public static class MauiProgram
         // Token service for storing JWT
         builder.Services.AddSingleton<TokenService>();
 
+        builder.Services.AddSingleton<AccountSelectionState>();
+
         // Register AuthMessageHandler and configure HttpClient to use it
         builder.Services.AddTransient<AuthMessageHandler>();
         builder.Services.AddHttpClient("ApiClient")

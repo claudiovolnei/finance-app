@@ -17,7 +17,7 @@ public static class DashboardEndpoints
             .Produces<DashboardSummaryDto>();
     }
 
-    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, int? year, int? month)
+    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, int? year, int? month, int? accountId)
     {
         // get user id from claims
         var userClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
@@ -25,7 +25,7 @@ public static class DashboardEndpoints
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month);
+        var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
         var categories = await categoryRepo.GetByUserIdAsync(userId);
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
 

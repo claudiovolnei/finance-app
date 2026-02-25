@@ -298,3 +298,46 @@ html, body {
     color: white;
     font-weight: 600;
 }
+
+/* Account selector in app bar */
+.account-selector {
+    min-width: 180px;
+    max-width: 220px;
+}
+
+.account-selector .mud-input-root,
+.account-selector .mud-input-control {
+    color: white !important;
+}
+
+.account-selector .mud-input-slot,
+.account-selector .mud-input-adornment,
+.account-selector .mud-select-input {
+    color: white !important;
+}
+
+/* Bottom menu action integrated in bar */
+.bottom-nav-link-add {
+    background: var(--mud-palette-primary) !important;
+    color: #fff !important;
+    border-radius: 10px;
+    margin: 0 2px;
+    min-height: 52px;
+}
+
+.bottom-nav-link-add .mud-icon-root,
+.bottom-nav-link-add .bottom-nav-label {
+    color: #fff !important;
+}
+
+/* Disable old floating FAB behavior if classes still exist */
+.bottom-nav-fab {
+    position: static !important;
+    transform: none !important;
+    left: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}

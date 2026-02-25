@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @using MudBlazor
+@using Finance.Domain.Entities
 @* Navigation injected in code-behind to avoid duplicate symbol *@
 
 <MudThemeProvider Theme="_theme" />
@@ -15,8 +16,24 @@
                            OnClick="DrawerToggle"
                            Class="desktop-only" />
 
-            <MudIcon Icon="@Icons.Material.Filled.Home" Class="ml-2" />
-            <MudText Typo="Typo.h6" Class="ml-2">Meu Financeiro</MudText>
+            <MudIcon Icon="@Icons.Material.Filled.AccountBalanceWallet" Class="ml-2" />
+            <MudText Typo="Typo.h6" Class="ml-2">Finance App</MudText>
+
+            <MudSelect T="int?"
+                       Value="AccountState.SelectedAccountId"
+                       ValueChanged="OnAccountChanged"
+                       Dense="true"
+                       Variant="Variant.Outlined"
+                       Class="ml-3 account-selector"
+                       Placeholder="Selecionar conta"
+                       AdornmentIcon="@Icons.Material.Filled.AccountBalance"
+                       Adornment="Adornment.Start"
+                       Disabled="@(!AccountState.Accounts.Any())">
+                @foreach (var account in AccountState.Accounts)
+                {
+                    <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
+                }
+            </MudSelect>
 
             <MudSpacer />
 
@@ -54,12 +71,9 @@
             </MudContainer>
         </MudMainContent>
 
-        <!-- Bottom navigation for mobile -->
         <div class="mobile-only bottom-nav-wrapper">
             <BottomNavMenu />
         </div>
-
-        <!-- FAB removed for mobile (center action lives inside bottom nav) -->
     </MudLayout>
 </MudBreakpointProvider>
 
@@ -69,19 +83,41 @@
     private string? _name;
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
+    [Inject] public Finance.Mobile.Services.FinanceApiClient ApiClient { get; set; } = default!;
+    [Inject] public Finance.Mobile.Services.AccountSelectionState AccountState { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
-        // Redirect to login if no token and not already on auth pages
         var token = await TokenService.GetTokenAsync();
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
         if (string.IsNullOrEmpty(token) && uri != "login" && uri != "auth/register")
         {
             Navigation.NavigateTo("/login");
+            return;
         }
 
         _name = await TokenService.GetUsernameAsync();
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            ApiClient.SetBearerToken(token);
+            try
+            {
+                var accounts = await ApiClient.GetAccountsAsync();
+                AccountState.SetAccounts(accounts);
+            }
+            catch
+            {
+                // no-op
+            }
+        }
+    }
+
+    private Task OnAccountChanged(int? accountId)
+    {
+        AccountState.SetSelectedAccount(accountId);
+        return Task.CompletedTask;
     }
 
     private string AvatarLetter =>
@@ -111,7 +147,6 @@
     }
 
     private void DrawerToggle() => _drawerOpen = !_drawerOpen;
-    private void GoToAddTransaction() => Navigation.NavigateTo("/transactions/add");
     private void GoToProfile() => Navigation.NavigateTo("/profile");
     private async void Logout()
     {
