@@ -99,7 +99,7 @@
         await LoadSummaryAsync();
     }
 
-    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
 
     private async Task PrevMonth()
     {
@@ -130,7 +130,7 @@
 
             _summary = dto;
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
-            _chartDataRaw = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+            _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
             await InvokeAsync(StateHasChanged);
         }
         catch

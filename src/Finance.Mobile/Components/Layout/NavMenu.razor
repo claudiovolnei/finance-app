@@ -1,7 +1,11 @@
 @using MudBlazor
+@using Finance.Mobile.Services
+@inject AccountSelectionState AccountState
 
 <MudDrawerHeader>
-    <MudText Typo="Typo.h6" Color="Color.Primary">Finance App</MudText>
+    <MudText Typo="Typo.subtitle1" Color="Color.Primary">
+        @(SelectedAccountName)
+    </MudText>
 </MudDrawerHeader>
 
 <MudNavMenu>
@@ -9,3 +13,9 @@
     <MudNavLink Href="/transactions" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.List">Transações</MudNavLink>
     <MudNavLink Href="/categories" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Category">Categorias</MudNavLink>
 </MudNavMenu>
+
+@code {
+    private string SelectedAccountName
+        => AccountState.Accounts.FirstOrDefault(a => a.Id == AccountState.SelectedAccountId)?.Name
+           ?? "Sem conta selecionada";
+}
