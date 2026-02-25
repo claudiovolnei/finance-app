@@ -8,13 +8,13 @@ html, body {
 }
 
 #app {
-    height: 100%;
+    height: 100dvh;
     overflow: auto;
 }
 
 /* MudLayout filling viewport in Blazor WebView */
 .mud-layout-full-height {
-    height: 100vh;
+    height: 100dvh;
     min-height: 100%;
 }
 
@@ -27,6 +27,8 @@ html, body {
 /* Layout geral do dashboard */
 .finance-layout {
     background-color: #f5f5f7;
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: 0;
 }
 
 .finance-main {
@@ -47,6 +49,16 @@ html, body {
     margin: 0 auto;
 }
 
+
+
+@media (max-width: 959px) {
+    .finance-main-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+}
 .finance-drawer {
     width: 240px;
 }
@@ -58,6 +70,7 @@ html, body {
 
 .mobile-only {
     display: none;
+    width: 100%;
 }
 
 @media (max-width: 959px) {
@@ -83,7 +96,7 @@ html, body {
 @media (max-width: 959px) {
     .main-container {
         margin-top: 0.5rem !important;
-        padding-bottom: 90px !important; /* Espaço para o bottom nav bar + FAB */
+        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0)) !important; /* Espaço para o bottom nav sem sobrepor área do sistema */
     }
 }
 
@@ -118,7 +131,7 @@ html, body {
     align-items: center;
     justify-content: space-around;
     width: 100%;
-    padding: 0 8px;
+    padding: 0 4px;
     gap: 4px;
 }
 
@@ -320,14 +333,16 @@ html, body {
 .bottom-nav-link-add {
     background: var(--mud-palette-primary) !important;
     color: #fff !important;
-    border-radius: 10px;
-    margin: 0 2px;
+    border-radius: 999px;
+    margin: 0 4px;
     min-height: 52px;
+    max-width: 60px;
 }
 
-.bottom-nav-link-add .mud-icon-root,
-.bottom-nav-link-add .bottom-nav-label {
+.bottom-nav-link-add .mud-icon-root {
     color: #fff !important;
+    margin: 0 !important;
+    font-size: 2rem !important;
 }
 
 /* Disable old floating FAB behavior if classes still exist */
@@ -340,4 +355,15 @@ html, body {
     height: auto !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+}
+
+@media (max-width: 959px) {
+    .mud-appbar {
+        padding-top: env(safe-area-inset-top, 0) !important;
+        min-height: calc(56px + env(safe-area-inset-top, 0));
+    }
+
+    .mud-main-content-full {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0));
+    }
 }

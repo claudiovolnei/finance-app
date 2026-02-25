@@ -3,32 +3,26 @@
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
 
-<MudItem xs="12" class="mt-2">
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="PrevMonth" />
-        <MudText Typo="Typo.subtitle1">@GetCurrentFilterLabel()</MudText>
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos" OnClick="NextMonth" />
-    </div>
-</MudItem>
+<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
-                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.Balance))</MudText>
+                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalIncome))</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Despesas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalExpense))</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalExpense))</MudText>
             </MudPaper>
         </MudItem>
 
@@ -58,7 +52,7 @@
                                 <tr>
                                     <td style="padding:8px;">@tx.Date.ToString("dd/MM/yyyy")</td>
                                     <td style="padding:8px;">@tx.CategoryName</td>
-                                    <td style="padding:8px;">@string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", tx.Amount)</td>
+                                    <td style="padding:8px;">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</td>
                                 </tr>
                             }
                         }
@@ -105,7 +99,7 @@
         await LoadSummaryAsync();
     }
 
-    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
 
     private async Task PrevMonth()
     {
@@ -136,7 +130,7 @@
 
             _summary = dto;
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
-            _chartDataRaw = dto.Categories.Select(c => Math.Abs((double)c.Amount)).ToArray();
+            _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
             await InvokeAsync(StateHasChanged);
         }
         catch

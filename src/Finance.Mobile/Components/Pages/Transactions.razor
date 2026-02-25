@@ -8,40 +8,10 @@
 @inject TokenService TokenService
 @inject AccountSelectionState AccountState
 
+<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
+
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
     <MudText Typo="Typo.h4" Class="mb-4">Transações</MudText>
-
-    <MudPaper Class="pa-3 mb-4">
-        <MudGrid GutterSize="GutterSize.Small">
-            <MudItem xs="12" sm="4">
-                <MudSelect T="int?" Value="_selectedAccountId" ValueChanged="OnAccountChanged" Label="Conta" Dense="true" Variant="Variant.Outlined">
-                    <MudSelectItem T="int?" Value="@((int?)null)">Todas</MudSelectItem>
-                    @foreach (var account in AccountState.Accounts)
-                    {
-                        <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="6" sm="4">
-                <MudSelect T="int?" Value="_filterYear" ValueChanged="OnYearChanged" Label="Ano" Dense="true" Variant="Variant.Outlined">
-                    <MudSelectItem T="int?" Value="@((int?)null)">Todos</MudSelectItem>
-                    @foreach (var year in _availableYears)
-                    {
-                        <MudSelectItem T="int?" Value="@year">@year</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="6" sm="4">
-                <MudSelect T="int?" Value="_filterMonth" ValueChanged="OnMonthChanged" Label="Mês" Dense="true" Variant="Variant.Outlined">
-                    <MudSelectItem T="int?" Value="@((int?)null)">Todos</MudSelectItem>
-                    @foreach (var month in _months)
-                    {
-                        <MudSelectItem T="int?" Value="@month">@new DateTime(2000, month, 1).ToString("MMMM")</MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
 
     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd" Class="mb-4">
         Nova Transação
@@ -68,7 +38,7 @@
             <RowTemplate>
                 <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
                 <MudTd DataLabel="Categoria">@context.CategoryName</MudTd>
-                <MudTd DataLabel="Valor">@context.Amount.ToString("C")</MudTd>
+                <MudTd DataLabel="Valor">@context.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudTd>
                 <MudTd DataLabel="Tipo">
                     <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Size="Size.Small">
                         @context.Type.ToString()
@@ -96,8 +66,7 @@
     private int? _selectedAccountId;
     private int? _filterYear;
     private int? _filterMonth;
-    private readonly int[] _months = Enumerable.Range(1, 12).ToArray();
-    private int[] _availableYears = Array.Empty<int>();
+    private DateTime _current = DateTime.Now;
 
     protected override async Task OnInitializedAsync()
     {
@@ -112,7 +81,27 @@
 
         ApiClient.SetBearerToken(token);
         _selectedAccountId = AccountState.SelectedAccountId;
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
 
+        await LoadTransactions();
+    }
+
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
+
+    private async Task PrevMonth()
+    {
+        _current = _current.AddMonths(-1);
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
+        await LoadTransactions();
+    }
+
+    private async Task NextMonth()
+    {
+        _current = _current.AddMonths(1);
+        _filterYear = _current.Year;
+        _filterMonth = _current.Month;
         await LoadTransactions();
     }
 
@@ -122,7 +111,6 @@
         {
             _loading = true;
             _transactions = await ApiClient.GetTransactionsAsync(_filterYear, _filterMonth, _selectedAccountId);
-            _availableYears = _transactions.Select(t => t.Date.Year).Distinct().OrderByDescending(y => y).ToArray();
         }
         catch (UnauthorizedAccessException)
         {
@@ -138,25 +126,6 @@
         {
             _loading = false;
         }
-    }
-
-    private async Task OnAccountChanged(int? value)
-    {
-        _selectedAccountId = value;
-        AccountState.SetSelectedAccount(value);
-        await LoadTransactions();
-    }
-
-    private async Task OnYearChanged(int? value)
-    {
-        _filterYear = value;
-        await LoadTransactions();
-    }
-
-    private async Task OnMonthChanged(int? value)
-    {
-        _filterMonth = value;
-        await LoadTransactions();
     }
 
     private async void NavigateToAdd()
