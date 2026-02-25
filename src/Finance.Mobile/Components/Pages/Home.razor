@@ -10,19 +10,19 @@
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
-                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.Balance))</MudText>
+                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalIncome))</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Despesas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", _summary.TotalExpense))</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalExpense))</MudText>
             </MudPaper>
         </MudItem>
 
@@ -52,7 +52,7 @@
                                 <tr>
                                     <td style="padding:8px;">@tx.Date.ToString("dd/MM/yyyy")</td>
                                     <td style="padding:8px;">@tx.CategoryName</td>
-                                    <td style="padding:8px;">@string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0:C}", tx.Amount)</td>
+                                    <td style="padding:8px;">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</td>
                                 </tr>
                             }
                         }

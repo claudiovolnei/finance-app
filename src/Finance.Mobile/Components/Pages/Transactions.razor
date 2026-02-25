@@ -38,7 +38,7 @@
             <RowTemplate>
                 <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
                 <MudTd DataLabel="Categoria">@context.CategoryName</MudTd>
-                <MudTd DataLabel="Valor">@context.Amount.ToString("C")</MudTd>
+                <MudTd DataLabel="Valor">@context.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudTd>
                 <MudTd DataLabel="Tipo">
                     <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Size="Size.Small">
                         @context.Type.ToString()
@@ -87,7 +87,7 @@
         await LoadTransactions();
     }
 
-    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+    private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
 
     private async Task PrevMonth()
     {

@@ -34,7 +34,7 @@
             <div class="category-row">
                 <div class="cat-info">
                     <div class="label">@label</div>
-                    <div class="amount">@string.Format(CultureInfo.CurrentCulture, "{0:C}", val)</div>
+                    <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", val)</div>
                 </div>
                 <div class="bar-bg">
                     <div class="bar" style="width:@pct%;background:@color"></div>

@@ -3,9 +3,19 @@
 @inject AccountSelectionState AccountState
 
 <MudDrawerHeader>
-    <MudText Typo="Typo.subtitle1" Color="Color.Primary">
-        @(SelectedAccountName)
-    </MudText>
+    <MudSelect T="int?"
+               Value="AccountState.SelectedAccountId"
+               ValueChanged="OnAccountChanged"
+               Dense="true"
+               Variant="Variant.Outlined"
+               FullWidth="true"
+               Label="Conta"
+               Disabled="@(!AccountState.Accounts.Any())">
+        @foreach (var account in AccountState.Accounts)
+        {
+            <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
+        }
+    </MudSelect>
 </MudDrawerHeader>
 
 <MudNavMenu>
@@ -15,7 +25,9 @@
 </MudNavMenu>
 
 @code {
-    private string SelectedAccountName
-        => AccountState.Accounts.FirstOrDefault(a => a.Id == AccountState.SelectedAccountId)?.Name
-           ?? "Sem conta selecionada";
+    private Task OnAccountChanged(int? accountId)
+    {
+        AccountState.SetSelectedAccount(accountId);
+        return Task.CompletedTask;
+    }
 }
