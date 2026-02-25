@@ -1,0 +1,16 @@
+<MudItem xs="12" class="mt-2">
+    <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="OnPreviousClicked" />
+        <MudText Typo="Typo.subtitle1">@CurrentLabel</MudText>
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos" OnClick="OnNextClicked" />
+    </div>
+</MudItem>
+
+@code {
+    [Parameter] public string CurrentLabel { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnPrevious { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+
+    private Task OnPreviousClicked() => OnPrevious.InvokeAsync();
+    private Task OnNextClicked() => OnNext.InvokeAsync();
+}

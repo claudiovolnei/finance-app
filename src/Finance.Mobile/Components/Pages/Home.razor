@@ -3,13 +3,7 @@
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
 
-<MudItem xs="12" class="mt-2">
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;">
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowBackIos" OnClick="PrevMonth" />
-        <MudText Typo="Typo.subtitle1">@GetCurrentFilterLabel()</MudText>
-        <MudIconButton Icon="@Icons.Material.Filled.ArrowForwardIos" OnClick="NextMonth" />
-    </div>
-</MudItem>
+<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
