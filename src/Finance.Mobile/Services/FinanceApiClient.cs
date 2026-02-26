@@ -218,6 +218,34 @@ public class FinanceApiClient
         return await _httpClient.GetFromJsonAsync<Account>(Url($"accounts/{id}"));
     }
 
+
+    public async Task<Account> CreateAccountAsync(string name, decimal initialBalance)
+    {
+        var request = new CreateAccountRequest(name, initialBalance);
+        var response = await _httpClient.PostAsJsonAsync(Url("accounts"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<Account>() ?? throw new Exception("Failed to create account");
+    }
+
+    public async Task UpdateAccountAsync(int id, string name, decimal initialBalance)
+    {
+        var request = new UpdateAccountRequest(name, initialBalance);
+        var response = await _httpClient.PutAsJsonAsync(Url($"accounts/{id}"), request);
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        response.EnsureSuccessStatusCode();
+    }
+
+    public async Task DeleteAccountAsync(int id)
+    {
+        var response = await _httpClient.DeleteAsync(Url($"accounts/{id}"));
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        response.EnsureSuccessStatusCode();
+    }
+
     // Request DTOs
     private record CreateTransactionRequest(
         int AccountId,
@@ -239,4 +267,6 @@ public class FinanceApiClient
 
     private record CreateCategoryRequest(string Name);
     private record UpdateCategoryRequest(string Name);
+    private record CreateAccountRequest(string Name, decimal InitialBalance);
+    private record UpdateAccountRequest(string Name, decimal InitialBalance);
 }

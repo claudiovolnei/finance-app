@@ -1,0 +1,126 @@
+@page "/accounts/edit/{Id:int}"
+@using MudBlazor
+@using Finance.Domain.Entities
+@using Finance.Mobile.Services
+@inject FinanceApiClient ApiClient
+@inject NavigationManager Navigation
+@inject TokenService TokenService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Editar Conta</MudText>
+
+    @if (_loading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
+    }
+    else if (_account == null)
+    {
+        <MudAlert Severity="Severity.Error">Conta não encontrada.</MudAlert>
+    }
+    else
+    {
+        <MudForm>
+            <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
+            <MudNumericField Label="Saldo inicial" @bind-Value="_initialBalance" Variant="Variant.Outlined" Required="true" Min="0" Adornment="Adornment.Start" AdornmentText="R$" />
+
+            <MudButtonGroup Class="mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+                    @if (_saving)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <MudText Class="ms-2">Salvando...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Salvar</MudText>
+                    }
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
+            </MudButtonGroup>
+        </MudForm>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Account? _account;
+    private string _name = string.Empty;
+    private decimal _initialBalance;
+    private string _message = string.Empty;
+    private Severity _alertSeverity = Severity.Info;
+    private bool _loading = true;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        ApiClient.SetBearerToken(token);
+        await LoadAccount();
+    }
+
+    private async Task LoadAccount()
+    {
+        try
+        {
+            _loading = true;
+            _account = await ApiClient.GetAccountByIdAsync(Id);
+            if (_account != null)
+            {
+                _name = _account.Name;
+                _initialBalance = _account.InitialBalance;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar conta: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Salvar()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _message = "Informe o nome da conta.";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await ApiClient.UpdateAccountAsync(Id, _name.Trim(), _initialBalance);
+            _message = "Conta atualizada com sucesso!";
+            _alertSeverity = Severity.Success;
+            await Task.Delay(800);
+            Navigation.NavigateTo("/accounts");
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao atualizar conta: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/accounts");
+}

@@ -22,9 +22,16 @@
             <div class="bottom-nav-label">Categorias</div>
         </MudNavLink>
 
-        <MudNavLink Href="/profile" Match="NavLinkMatch.Prefix" Class="bottom-nav-link">
-            <MudIcon Icon="@Icons.Material.Filled.Person" />
-            <div class="bottom-nav-label">Perfil</div>
-        </MudNavLink>
+        <MudMenu Dense="true" AnchorOrigin="Origin.TopCenter" TransformOrigin="Origin.BottomCenter" Class="bottom-nav-link bottom-nav-more-menu">
+            <ActivatorContent>
+                <div class="bottom-nav-more-activator">
+                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" />
+                    <div class="bottom-nav-label">Mais</div>
+                </div>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="/accounts">Dados das contas</MudMenuItem>
+            </ChildContent>
+        </MudMenu>
     </div>
 </MudAppBar>

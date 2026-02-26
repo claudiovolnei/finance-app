@@ -10,7 +10,7 @@
 <MudPopoverProvider />
 <MudBreakpointProvider>
     <MudLayout Class="mud-layout-full-height finance-layout">
-        <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudAppBar Elevation="1" Color="Color.Primary" Dense="true" Class="finance-top-appbar">
             @if (_isAuthenticated)
             {
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
@@ -23,7 +23,7 @@
                            Value="AccountState.SelectedAccountId"
                            ValueChanged="OnAccountChanged"
                            Dense="true"
-                           Variant="Variant.Outlined"
+                           Variant="Variant.Text"
                            Class="ml-3 account-selector"
                            Placeholder="Selecionar conta"
                            AdornmentIcon="@Icons.Material.Filled.AccountBalance"
