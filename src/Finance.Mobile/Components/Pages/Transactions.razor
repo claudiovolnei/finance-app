@@ -35,16 +35,16 @@
                 {
                     <MudListItem Class="px-0">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                            <MudStack Spacing="0">
-                                <MudText Typo="Typo.body2">@tx.CategoryName</MudText>
-                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                            <MudStack Spacing="0" Style="min-width:0;">
+                                <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
                             </MudStack>
 
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                 <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
                                     @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
                                 </MudChip>
-                                <MudText Typo="Typo.body2" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                                <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
                                     @tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
                                 </MudText>
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />

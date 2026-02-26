@@ -31,7 +31,7 @@
                 {
                     <MudListItem Class="px-0">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                            <MudText Typo="Typo.body2">@category.Name</MudText>
+                            <MudText Typo="Typo.body2" Class="list-primary-text">@category.Name</MudText>
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(category.Id))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(category.Id))" />
