@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @using MudBlazor
 @using Finance.Domain.Entities
 @* Navigation injected in code-behind to avoid duplicate symbol *@
@@ -10,55 +11,66 @@
 <MudBreakpointProvider>
     <MudLayout Class="mud-layout-full-height finance-layout">
         <MudAppBar Elevation="1" Color="Color.Primary">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                           Color="Color.Inherit"
-                           Edge="Edge.Start"
-                           OnClick="DrawerToggle"
-                           Class="desktop-only" />
+            @if (_isAuthenticated)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               Edge="Edge.Start"
+                               OnClick="DrawerToggle"
+                               Class="desktop-only" />
 
-            <MudSelect T="int?"
-                       Value="AccountState.SelectedAccountId"
-                       ValueChanged="OnAccountChanged"
-                       Dense="true"
-                       Variant="Variant.Outlined"
-                       Class="ml-3 account-selector"
-                       Placeholder="Selecionar conta"
-                       AdornmentIcon="@Icons.Material.Filled.AccountBalance"
-                       Adornment="Adornment.Start"
-                       Disabled="@(!AccountState.Accounts.Any())">
-                @foreach (var account in AccountState.Accounts)
-                {
-                    <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
-                }
-            </MudSelect>
+                <MudSelect T="int?"
+                           Value="AccountState.SelectedAccountId"
+                           ValueChanged="OnAccountChanged"
+                           Dense="true"
+                           Variant="Variant.Outlined"
+                           Class="ml-3 account-selector"
+                           Placeholder="Selecionar conta"
+                           AdornmentIcon="@Icons.Material.Filled.AccountBalance"
+                           Adornment="Adornment.Start"
+                           Disabled="@(!AccountState.Accounts.Any())">
+                    @foreach (var account in AccountState.Accounts)
+                    {
+                        <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            }
 
             <MudSpacer />
 
-            <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
+            @if (_isAuthenticated)
+            {
+                <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                               Color="Color.Inherit"
+                               Class="appbar-icon-button" />
 
-            <MudMenu OffsetY="true">
-                <ActivatorContent>
-                    <MudAvatar Size="Size.Medium"
-                               Class="ml-2 avatar-letter"
-                               Color="@AvatarColor">
-                            @AvatarLetter
-                    </MudAvatar>
-                </ActivatorContent>
-                <ChildContent>
-                    <MudMenuItem OnClick="GoToProfile">Perfil</MudMenuItem>
-                    <MudMenuItem OnClick="Logout">Sair</MudMenuItem>
-                </ChildContent>
-            </MudMenu>
+                <MudMenu OffsetY="true">
+                    <ActivatorContent>
+                        <MudAvatar Size="Size.Medium"
+                                   Class="ml-2 avatar-letter"
+                                   Color="@AvatarColor">
+                                @AvatarLetter
+                        </MudAvatar>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <MudMenuItem OnClick="GoToProfile">Perfil</MudMenuItem>
+                        <MudMenuItem OnClick="Logout">Sair</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            }
         </MudAppBar>
 
-        <MudDrawer @bind-Open="_drawerOpen"
-                   ClipMode="DrawerClipMode.Always"
-                   Elevation="2"
-                   Variant="DrawerVariant.Responsive"
-                   Breakpoint="Breakpoint.Sm"
-                   Class="finance-drawer desktop-only">
-            <NavMenu />
-        </MudDrawer>
+        @if (_isAuthenticated)
+        {
+            <MudDrawer @bind-Open="_drawerOpen"
+                       ClipMode="DrawerClipMode.Always"
+                       Elevation="2"
+                       Variant="DrawerVariant.Responsive"
+                       Breakpoint="Breakpoint.Sm"
+                       Class="finance-drawer desktop-only">
+                <NavMenu />
+            </MudDrawer>
+        }
 
         <MudMainContent Class="mud-main-content-full">
             <MudContainer MaxWidth="MaxWidth.Large" Class="finance-main-container">
@@ -68,9 +80,12 @@
             </MudContainer>
         </MudMainContent>
 
-        <div class="mobile-only bottom-nav-wrapper">
-            <BottomNavMenu />
-        </div>
+        @if (_isAuthenticated)
+        {
+            <div class="mobile-only bottom-nav-wrapper">
+                <BottomNavMenu />
+            </div>
+        }
     </MudLayout>
 </MudBreakpointProvider>
 
@@ -78,6 +93,7 @@
     private bool _drawerOpen = true;
     private MudTheme _theme = new();
     private string? _name;
+    private bool _isAuthenticated;
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public Finance.Mobile.Services.FinanceApiClient ApiClient { get; set; } = default!;
@@ -86,28 +102,52 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Navigation.LocationChanged += HandleLocationChanged;
+        await RefreshAuthenticationStateAsync();
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await RefreshAuthenticationStateAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshAuthenticationStateAsync()
+    {
         var token = await TokenService.GetTokenAsync();
+        var wasAuthenticated = _isAuthenticated;
+        _isAuthenticated = !string.IsNullOrWhiteSpace(token);
+
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
-        if (string.IsNullOrEmpty(token) && uri != "login" && uri != "auth/register")
+        if (!_isAuthenticated && uri != "login" && uri != "auth/register")
         {
             Navigation.NavigateTo("/login");
             return;
         }
 
-        _name = await TokenService.GetUsernameAsync();
-
-        if (!string.IsNullOrEmpty(token))
+        if (_isAuthenticated)
         {
-            ApiClient.SetBearerToken(token);
-            try
+            _name = await TokenService.GetUsernameAsync();
+            ApiClient.SetBearerToken(token!);
+
+            if (!wasAuthenticated || !AccountState.Accounts.Any())
             {
-                var accounts = await ApiClient.GetAccountsAsync();
-                AccountState.SetAccounts(accounts);
+                try
+                {
+                    var accounts = await ApiClient.GetAccountsAsync();
+                    AccountState.SetAccounts(accounts);
+                }
+                catch
+                {
+                    // no-op
+                }
             }
-            catch
-            {
-                // no-op
-            }
+        }
+        else
+        {
+            _name = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
         }
     }
 
@@ -148,6 +188,15 @@
     private async void Logout()
     {
         await TokenService.RemoveTokenAsync();
-        Navigation.NavigateTo("/login");
+        _isAuthenticated = false;
+        _name = null;
+        AccountState.SetAccounts(Array.Empty<Account>());
+        AccountState.SetSelectedAccount(null);
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
     }
 }

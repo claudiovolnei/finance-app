@@ -1,19 +1,20 @@
 @using MudBlazor
 
-<MudAppBar Elevation="2" Dense="true" Class="bottom-nav-bar" Bottom="true" Color="Color.Surface">
+<MudAppBar Elevation="0" Dense="true" Class="bottom-nav-bar" Bottom="true" Color="Color.Surface">
     <div class="bottom-nav-content">
         <MudNavLink Href="/" Match="NavLinkMatch.All" Class="bottom-nav-link">
             <MudIcon Icon="@Icons.Material.Filled.Home" />
-            <div class="bottom-nav-label">Dashboard</div>
+            <div class="bottom-nav-label">Início</div>
         </MudNavLink>
 
         <MudNavLink Href="/transactions" Match="NavLinkMatch.Prefix" Class="bottom-nav-link">
-            <MudIcon Icon="@Icons.Material.Filled.List" />
+            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" />
             <div class="bottom-nav-label">Lançamentos</div>
         </MudNavLink>
 
         <MudNavLink Href="/transactions/add" Match="NavLinkMatch.Prefix" Class="bottom-nav-link bottom-nav-link-add" AriaLabel="Adicionar transação">
             <MudIcon Icon="@Icons.Material.Filled.Add" />
+            <div class="bottom-nav-label">Novo</div>
         </MudNavLink>
 
         <MudNavLink Href="/categories" Match="NavLinkMatch.Prefix" Class="bottom-nav-link">

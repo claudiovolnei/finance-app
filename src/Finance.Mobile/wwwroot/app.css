@@ -1,20 +1,27 @@
-/* Minimal CSS for MudBlazor + full-height layout */
-html, body {
+:root {
+    --safe-top: max(14px, env(safe-area-inset-top, 0px));
+    --safe-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+}
+
+html,
+body {
     font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
+    width: 100%;
     height: 100%;
     overflow: hidden;
 }
 
 #app {
+    height: 100svh;
     height: 100dvh;
-    overflow: auto;
+    overflow: hidden;
 }
 
 /* MudLayout filling viewport in Blazor WebView */
 .mud-layout-full-height {
-    height: 100dvh;
+    height: 100%;
     min-height: 100%;
 }
 
@@ -24,18 +31,14 @@ html, body {
     overflow: auto;
 }
 
-/* Layout geral do dashboard */
 .finance-layout {
     background-color: #f5f5f7;
-    padding-top: env(safe-area-inset-top, 0);
-    padding-bottom: 0;
 }
 
 .finance-main {
     padding: 16px 24px;
 }
 
-/* Center values inside top cards */
 .card-center {
     display: flex;
     flex-direction: column;
@@ -49,21 +52,10 @@ html, body {
     margin: 0 auto;
 }
 
-
-
-@media (max-width: 959px) {
-    .finance-main-container {
-        max-width: 100% !important;
-        width: 100% !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-    }
-}
 .finance-drawer {
     width: 240px;
 }
 
-/* Visibilidade desktop x mobile */
 .desktop-only {
     display: inline-flex;
 }
@@ -73,208 +65,38 @@ html, body {
     width: 100%;
 }
 
-@media (max-width: 959px) {
-    .desktop-only {
-        display: none !important;
-    }
-
-    .mobile-only {
-        display: inline-flex !important;
-    }
-
-    .finance-main {
-        padding: 8px 8px 96px; /* espaço para o bottom nav */
-    }
-}
-
-/* Container: em mobile adiciona espaço para o bottom nav */
 .main-container {
     margin-top: 1rem;
     padding-bottom: 1rem;
 }
 
-@media (max-width: 959px) {
-    .main-container {
-        margin-top: 0.5rem !important;
-        padding-bottom: calc(96px + env(safe-area-inset-bottom, 0)) !important; /* Espaço para o bottom nav sem sobrepor área do sistema */
-    }
+.avatar-letter {
+    color: white;
+    font-weight: 600;
 }
 
-/* Mobile header - compacto para evitar espaço em branco */
-.mobile-header {
-    padding: 8px 16px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    background: var(--mud-palette-background, #fff);
+.account-selector {
+    min-width: 180px;
+    max-width: 220px;
 }
 
-/* Bottom navigation bar - responsivo */
-/* Bottom navigation bar - responsivo */
-.bottom-nav-bar {
-    padding: 6px 8px !important;
-    padding-bottom: calc(6px + env(safe-area-inset-bottom, 0)) !important;
-    min-height: 64px !important;
-    background: #ffffff !important;
-    border-top: 1px solid rgba(0,0,0,0.06);
+.account-selector .mud-input-root,
+.account-selector .mud-input-control,
+.account-selector .mud-input-slot,
+.account-selector .mud-input-adornment,
+.account-selector .mud-select-input {
+    color: white !important;
 }
 
-.bottom-nav-wrapper {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: env(safe-area-inset-bottom, 0);
-    z-index: 100;
-}
-
-.bottom-nav-content {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-around;
-    width: 100%;
-    padding: 0 4px;
-    gap: 4px;
-}
-
-.bottom-nav-link {
-    display:flex !important;
-    flex-direction: column !important;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    min-width: 0;
-    padding: 6px 4px !important;
-    font-size: 0.75rem !important;
-    color: rgba(0,0,0,0.6);
-    text-align: center;
-    overflow: visible;
-    min-height: 56px;
-    padding-top: 6px !important;
-    padding-bottom: 6px !important;
-    flex-basis: 0;
-    flex-grow: 1;
-}
-
-/* Ensure MudNavLink root is aligned vertically so icon sits above label */
-.bottom-nav-link .mud-nav-link-root,
-.bottom-nav-link .mud-nav-link {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-.bottom-nav-fab {
-    position: fixed;
-    bottom: 32px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1100;
-}
-
-.bottom-nav-link .mud-icon-root {
-    margin: 0 0 6px 0;
-    display: block;
-    font-size: 1.6rem !important;
-    width: 100%;
-    text-align: center;
-}
-
-.bottom-nav-link.mud-nav-link-active {
-    color: var(--mud-palette-primary) !important;
-    font-weight: 700;
-}
-
-.bottom-nav-fab {
-    /* Slightly smaller circular FAB */
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-}
-
-.bottom-nav-fab .mud-icon-root {
-    font-size: 1.6rem !important;
-}
-
-/* Ensure MudBlazor's button classes don't force a square shape */
-.bottom-nav-fab.mud-icon-button,
-.bottom-nav-fab.mud-button-root,
-.bottom-nav-fab button {
-    width: 64px !important;
-    height: 64px !important;
-    min-width: 0 !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-}
-
-.bottom-nav-fab-menu {
-    margin: 0 -4px;
-}
-
-.bottom-nav-label {
-    font-size: 0.65rem;
-    margin-top: 4px;
-    white-space: normal !important;
-    overflow: visible !important;
-    word-break: break-word !important;
-    max-width: none;
-    text-align: center;
-    line-height: 1rem;
-}
-
-/* Ensure nav link root centers its content */
-.bottom-nav-link .mud-nav-link-root,
-.bottom-nav-link .mud-nav-link-content,
-.bottom-nav-link a
-{
-    display:flex !important;
-    flex-direction:column !important;
-    align-items:center !important;
-    justify-content:center !important;
-    padding: 0 !important;
-}
-
-/* Ensure labels show on mobile and not clipped */
-.mobile-only .bottom-nav-label,
-.bottom-nav-link .bottom-nav-label {
-    display: block !important;
-}
-
-/* Telas muito pequenas - ajuste fino */
-@media (max-width: 360px) {
-    .bottom-nav-link {
-        font-size: 0.6rem !important;
-        padding: 2px 1px !important;
-    }
-    .bottom-nav-link .mud-icon-root {
-        font-size: 1.2rem !important;
-    }
-    .bottom-nav-fab {
-        width: 48px !important;
-        height: 48px !important;
-    }
-    .bottom-nav-fab.mud-icon-button,
-    .bottom-nav-fab.mud-button-root,
-    .bottom-nav-fab button {
-        width: 48px !important;
-        height: 48px !important;
-        border-radius: 50% !important;
-    }
-}
-
-.bottom-nav-label {
-    white-space: normal !important;
-    overflow: visible !important;
-    line-height: 1rem;
+.appbar-icon-button {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
 }
 
 #blazor-error-ui {
     background: lightyellow;
-    bottom: env(safe-area-inset-bottom, 0);
+    bottom: var(--safe-bottom);
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     display: none;
     left: 0;
@@ -291,79 +113,137 @@ html, body {
     top: 0.5rem;
 }
 
-.status-bar-safe-area {
-    display: none;
-}
-
-@media (display-mode: standalone) {
-    .status-bar-safe-area {
-        display: flex;
-        position: sticky;
-        top: 0;
-        height: env(safe-area-inset-top);
-        background-color: #f7f7f7;
-        width: 100%;
-        z-index: 1;
-    }
-}
-
-.avatar-letter {
-    color: white;
-    font-weight: 600;
-}
-
-/* Account selector in app bar */
-.account-selector {
-    min-width: 180px;
-    max-width: 220px;
-}
-
-.account-selector .mud-input-root,
-.account-selector .mud-input-control {
-    color: white !important;
-}
-
-.account-selector .mud-input-slot,
-.account-selector .mud-input-adornment,
-.account-selector .mud-select-input {
-    color: white !important;
-}
-
-/* Bottom menu action integrated in bar */
-.bottom-nav-link-add {
-    background: var(--mud-palette-primary) !important;
-    color: #fff !important;
-    border-radius: 999px;
-    margin: 0 4px;
-    min-height: 52px;
-    max-width: 60px;
-}
-
-.bottom-nav-link-add .mud-icon-root {
-    color: #fff !important;
-    margin: 0 !important;
-    font-size: 2rem !important;
-}
-
-/* Disable old floating FAB behavior if classes still exist */
-.bottom-nav-fab {
-    position: static !important;
-    transform: none !important;
-    left: auto !important;
-    bottom: auto !important;
-    width: auto !important;
-    height: auto !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
 @media (max-width: 959px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: inline-flex !important;
+    }
+
     .mud-appbar {
-        padding-top: env(safe-area-inset-top, 0) !important;
-        min-height: calc(56px + env(safe-area-inset-top, 0));
+        padding-top: var(--safe-top) !important;
+        min-height: calc(56px + var(--safe-top));
+    }
+
+    .finance-main {
+        padding: 8px 8px 96px;
+    }
+
+    .finance-main-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .main-container {
+        margin-top: 0.5rem !important;
+        padding-bottom: calc(90px + var(--safe-bottom)) !important;
     }
 
     .mud-main-content-full {
-        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0));
+        padding-bottom: calc(84px + var(--safe-bottom));
+    }
+}
+
+.bottom-nav-wrapper {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    padding: 0 8px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+    background: linear-gradient(to top, rgba(245, 245, 247, 0.95), rgba(245, 245, 247, 0));
+}
+
+.bottom-nav-bar {
+    width: 100%;
+    border-radius: 18px !important;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    backdrop-filter: blur(8px);
+    padding: 6px 8px !important;
+}
+
+.bottom-nav-content {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px;
+}
+
+.bottom-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    min-height: 58px;
+    border-radius: 12px;
+    color: rgba(15, 23, 42, 0.7);
+    text-align: center;
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.bottom-nav-link .mud-nav-link-root,
+.bottom-nav-link .mud-nav-link-content,
+.bottom-nav-link a {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+    padding: 0 !important;
+}
+
+.bottom-nav-link .mud-icon-root {
+    margin: 0;
+    font-size: 1.35rem !important;
+}
+
+.bottom-nav-label {
+    font-size: 0.68rem;
+    line-height: 1rem;
+    white-space: nowrap;
+}
+
+.bottom-nav-link:hover {
+    background: rgba(30, 64, 175, 0.08);
+}
+
+.bottom-nav-link.mud-nav-link-active {
+    color: var(--mud-palette-primary) !important;
+    background: rgba(30, 64, 175, 0.12);
+    font-weight: 700;
+}
+
+.bottom-nav-link-add {
+    color: var(--mud-palette-primary) !important;
+}
+
+.bottom-nav-link-add .mud-icon-root {
+    font-size: 1.45rem !important;
+}
+
+@media (max-width: 360px) {
+    .bottom-nav-wrapper {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .bottom-nav-link {
+        min-height: 54px;
+    }
+
+    .bottom-nav-label {
+        font-size: 0.62rem;
     }
 }

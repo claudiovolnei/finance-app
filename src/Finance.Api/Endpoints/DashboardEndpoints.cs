@@ -34,8 +34,8 @@ public static class DashboardEndpoints
         var balance = totalIncome - totalExpense;
 
         var categoryTotals = transactions
-            .GroupBy(t => t.CategoryId)
-            .Select(g => new { CategoryId = g.Key, Amount = g.Sum(t => t.Amount) })
+            .GroupBy(t => new { t.CategoryId, t.Type })
+            .Select(g => new { g.Key.CategoryId, g.Key.Type, Amount = g.Sum(t => t.Amount) })
             .ToList();
 
         var totalByCategories = categoryTotals.Sum(c => Math.Abs(c.Amount));
@@ -45,7 +45,7 @@ public static class DashboardEndpoints
         {
             var name = categoryMap.TryGetValue(c.CategoryId, out var categoryName) ? categoryName : "Outros";
             var percent = totalByCategories == 0 ? 0m : Math.Round((decimal)(Math.Abs(c.Amount) / totalByCategories) * 100m, 2);
-            categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent));
+            categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent, c.Type));
         }
 
         var latestTxs = transactions.OrderByDescending(t => t.Date).Take(5).ToList();
