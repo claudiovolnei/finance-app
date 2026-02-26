@@ -5,8 +5,6 @@
   const setBearerToken = (token) => {
     if (!token || !window.ui?.authActions) return;
 
-    const bearerValue = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
-
     window.ui.authActions.authorize({
       [SECURITY_SCHEMA]: {
         name: SECURITY_SCHEMA,
@@ -15,7 +13,7 @@
           scheme: "bearer",
           bearerFormat: "JWT"
         },
-        value: bearerValue
+        value: token
       }
     });
   };
