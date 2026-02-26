@@ -352,17 +352,49 @@ body {
 }
 
 .transaction-detail-overlay {
-    z-index: 1300;
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding: 16px;
+    background: rgba(15, 23, 42, 0.35);
 }
 
 .transaction-detail-dialog {
-    width: min(100%, 480px);
-    border-radius: 18px;
+    width: 100%;
+    max-width: 100%;
+    min-height: 60dvh;
+    border-radius: 20px 20px 0 0;
     padding: 20px;
+    transform: translateY(100%);
+    opacity: 0.96;
+}
+
+.transaction-detail-dialog-open {
+    animation: transactionPanelUp 0.26s ease-out forwards;
+}
+
+.transaction-detail-dialog-close {
+    animation: transactionPanelDown 0.26s ease-in forwards;
+}
+
+@keyframes transactionPanelUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes transactionPanelDown {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(100%);
+    }
 }
 
 .bottom-nav-link:hover {

@@ -79,14 +79,14 @@
     </MudGrid>
 </MudContainer>
 
-@if (_selectedTransaction is not null)
+@if (_isTransactionPanelVisible && _selectedTransaction is not null)
 {
-    <MudOverlay Visible="_isTransactionDialogOpen" DarkBackground="true" AutoClose="true" OnClosed="CloseTransactionDialog" Class="transaction-detail-overlay">
-        <MudPaper Class="transaction-detail-dialog" Elevation="6">
+    <div class="transaction-detail-overlay" @onclick="CloseTransactionDialogAsync">
+        <MudPaper Class="@GetTransactionPanelClass()" Elevation="6" @onclick:stopPropagation="true">
             <MudStack Spacing="2">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                     <MudText Typo="Typo.h6">Detalhes da Transação</MudText>
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" OnClick="CloseTransactionDialog" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" OnClick="CloseTransactionDialogAsync" />
                 </MudStack>
 
                 <MudDivider />
@@ -100,7 +100,7 @@
                 <MudText Typo="Typo.body2"><strong>ID da Transação:</strong> @_selectedTransaction.Id</MudText>
             </MudStack>
         </MudPaper>
-    </MudOverlay>
+    </div>
 }
 
 @code {
@@ -118,6 +118,8 @@
     private DateTime _current = DateTime.Now;
     private TransactionSummaryDto? _selectedTransaction;
     private bool _isTransactionDialogOpen;
+    private bool _isTransactionPanelVisible;
+    private const int TransactionPanelAnimationMs = 260;
 
     protected override async Task OnInitializedAsync()
     {
@@ -193,14 +195,23 @@
     private void OpenTransactionDialog(TransactionSummaryDto transaction)
     {
         _selectedTransaction = transaction;
+        _isTransactionPanelVisible = true;
         _isTransactionDialogOpen = true;
     }
 
-    private void CloseTransactionDialog()
+    private async Task CloseTransactionDialogAsync()
     {
         _isTransactionDialogOpen = false;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(TransactionPanelAnimationMs);
+        _isTransactionPanelVisible = false;
         _selectedTransaction = null;
     }
+
+    private string GetTransactionPanelClass() =>
+        _isTransactionDialogOpen
+            ? "transaction-detail-dialog transaction-detail-dialog-open"
+            : "transaction-detail-dialog transaction-detail-dialog-close";
 
     public void Dispose()
     {
