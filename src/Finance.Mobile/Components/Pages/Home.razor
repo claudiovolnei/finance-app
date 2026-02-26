@@ -2,6 +2,7 @@
 @implements IDisposable
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
+@using Finance.Domain.Entities
 
 <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
@@ -16,7 +17,7 @@
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Primary">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
+                <MudText Typo="Typo.h5" Color="Color.Success">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
@@ -28,41 +29,50 @@
 
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
-                <CategoryBarChart Labels="@_chartLabels" Values="@_chartDataRaw" EmptyMessage="Sem dados" />
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Categorias por tipo</MudText>
+                <CategoryBarChart Labels="@_chartLabels" Values="@_chartDataRaw" Types="@_chartTypes" EmptyMessage="Sem dados" />
             </MudPaper>
         </MudItem>
 
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
-                <MudText Typo="Typo.subtitle1">Últimos Lançamentos</MudText>
-                <div style="overflow:auto;margin-top:8px;">
-                    <table style="width:100%;border-collapse:collapse;">
-                        <thead>
-                            <tr style="text-align:left;border-bottom:1px solid rgba(0,0,0,0.08);">
-                                <th style="padding:8px;">Data</th>
-                                <th style="padding:8px;">Categoria</th>
-                                <th style="padding:8px;">Valor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @if (_summary != null)
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Últimos Lançamentos</MudText>
+
+                @if (_summary is null)
+                {
+                    <MudSkeleton Height="44px" Class="mb-2" />
+                    <MudSkeleton Height="44px" Class="mb-2" />
+                    <MudSkeleton Height="44px" />
+                }
+                else if (!_summary.LatestTransactions.Any())
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">Sem lançamentos no período.</MudAlert>
+                }
+                else
+                {
+                    <MudList Dense="true" Class="pa-0">
+                        @foreach (var tx in _summary.LatestTransactions)
                         {
-                            foreach (var tx in _summary.LatestTransactions)
-                            {
-                                <tr>
-                                    <td style="padding:8px;">@tx.Date.ToString("dd/MM/yyyy")</td>
-                                    <td style="padding:8px;">@tx.CategoryName</td>
-                                    <td style="padding:8px;">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</td>
-                                </tr>
-                            }
+                            <MudListItem Class="px-0">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                    <MudStack Spacing="0">
+                                        <MudText Typo="Typo.body2">@tx.CategoryName</MudText>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
+                                            @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
+                                        </MudChip>
+                                        <MudText Typo="Typo.body2" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
+                                        </MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </MudListItem>
+                            <MudDivider />
                         }
-                        else
-                        {
-                            <tr><td colspan="4" style="padding:8px;">Carregando...</td></tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
+                    </MudList>
+                }
             </MudPaper>
         </MudItem>
     </MudGrid>
@@ -77,6 +87,7 @@
     private DashboardSummaryDto? _summary;
     private string[] _chartLabels = Array.Empty<string>();
     private double[] _chartDataRaw = Array.Empty<double>();
+    private TransactionType[] _chartTypes = Array.Empty<TransactionType>();
     private int? _filterYear;
     private int? _filterMonth;
     private DateTime _current = DateTime.Now;
@@ -131,6 +142,7 @@
             _summary = dto;
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
             _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
+            _chartTypes = dto.Categories.Select(c => c.Type).ToArray();
             await InvokeAsync(StateHasChanged);
         }
         catch
