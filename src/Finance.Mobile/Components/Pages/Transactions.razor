@@ -30,7 +30,7 @@
     {
         <MudPaper Class="pa-4" Elevation="1">
             <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_transactions.Count lançamentos no período</MudText>
-            <MudList Dense="true" Class="pa-0">
+            <MudList T="Transaction" Dense="true" Class="pa-0">
                 @foreach (var tx in _transactions)
                 {
                     <MudListItem Class="px-0">
