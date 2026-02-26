@@ -11,11 +11,22 @@
 <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Transações</MudText>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h5">Transações</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
+            Nova
+        </MudButton>
+    </MudStack>
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd" Class="mb-4">
-        Nova Transação
-    </MudButton>
+    @if (!_loading && _transactions is { Count: > 0 })
+    {
+        <MudPaper Class="pa-3 mb-3" Elevation="0" Outlined="true">
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Total de lançamentos</MudText>
+                <MudText Typo="Typo.subtitle2">@_transactions.Count</MudText>
+            </MudStack>
+        </MudPaper>
+    }
 
     @if (_loading)
     {
@@ -23,25 +34,29 @@
     }
     else if (_transactions == null || !_transactions.Any())
     {
-        <MudAlert Severity="Severity.Info">Nenhuma transação encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Info" Dense="true">Nenhuma transação encontrada.</MudAlert>
     }
     else
     {
-        <MudTable Items="@_transactions" Hover="true" Dense="true" Striped="true">
+        <MudTable Items="@_transactions" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Class="elevation-0" Bordered="false" Striped="false">
             <HeaderContent>
                 <MudTh>Data</MudTh>
                 <MudTh>Categoria</MudTh>
-                <MudTh>Valor</MudTh>
+                <MudTh Style="text-align:right;">Valor</MudTh>
                 <MudTh>Tipo</MudTh>
                 <MudTh>Ações</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
                 <MudTd DataLabel="Categoria">@context.CategoryName</MudTd>
-                <MudTd DataLabel="Valor">@context.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudTd>
+                <MudTd DataLabel="Valor" Style="text-align:right;">
+                    <MudText Typo="Typo.body2" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                        @context.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                    </MudText>
+                </MudTd>
                 <MudTd DataLabel="Tipo">
-                    <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Size="Size.Small">
-                        @context.Type.ToString()
+                    <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
+                        @(context.Type == TransactionType.Income ? "Crédito" : "Débito")
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="Ações">
@@ -54,7 +69,7 @@
 
     @if (!string.IsNullOrEmpty(_message))
     {
-        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+        <MudAlert Severity="@_alertSeverity" Dense="true" Class="mt-3">@_message</MudAlert>
     }
 </MudContainer>
 

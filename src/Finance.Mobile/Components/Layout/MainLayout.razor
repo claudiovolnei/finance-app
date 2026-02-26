@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @using MudBlazor
 @using Finance.Domain.Entities
 @* Navigation injected in code-behind to avoid duplicate symbol *@
@@ -101,7 +102,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Navigation.LocationChanged += HandleLocationChanged;
+        await RefreshAuthenticationStateAsync();
+    }
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await RefreshAuthenticationStateAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task RefreshAuthenticationStateAsync()
+    {
         var token = await TokenService.GetTokenAsync();
+        var wasAuthenticated = _isAuthenticated;
         _isAuthenticated = !string.IsNullOrWhiteSpace(token);
 
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
@@ -115,18 +129,23 @@
         {
             _name = await TokenService.GetUsernameAsync();
             ApiClient.SetBearerToken(token!);
-            try
+
+            if (!wasAuthenticated || !AccountState.Accounts.Any())
             {
-                var accounts = await ApiClient.GetAccountsAsync();
-                AccountState.SetAccounts(accounts);
-            }
-            catch
-            {
-                // no-op
+                try
+                {
+                    var accounts = await ApiClient.GetAccountsAsync();
+                    AccountState.SetAccounts(accounts);
+                }
+                catch
+                {
+                    // no-op
+                }
             }
         }
         else
         {
+            _name = null;
             AccountState.SetAccounts(Array.Empty<Account>());
             AccountState.SetSelectedAccount(null);
         }
@@ -170,8 +189,14 @@
     {
         await TokenService.RemoveTokenAsync();
         _isAuthenticated = false;
+        _name = null;
         AccountState.SetAccounts(Array.Empty<Account>());
         AccountState.SetSelectedAccount(null);
         Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
     }
 }
