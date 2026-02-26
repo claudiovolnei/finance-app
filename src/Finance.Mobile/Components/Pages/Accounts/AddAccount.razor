@@ -1,0 +1,86 @@
+@page "/accounts/add"
+@using MudBlazor
+@using Finance.Mobile.Services
+@inject FinanceApiClient ApiClient
+@inject NavigationManager Navigation
+@inject TokenService TokenService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Nova Conta</MudText>
+
+    <MudForm>
+        <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
+        <MudNumericField Label="Saldo inicial" @bind-Value="_initialBalance" Variant="Variant.Outlined" Required="true" Min="0" Adornment="Adornment.Start" AdornmentText="R$" />
+
+        <MudButtonGroup Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+                @if (_saving)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">Salvando...</MudText>
+                }
+                else
+                {
+                    <MudText>Salvar</MudText>
+                }
+            </MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
+        </MudButtonGroup>
+    </MudForm>
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+    }
+</MudContainer>
+
+@code {
+    private string _name = string.Empty;
+    private decimal _initialBalance;
+    private string _message = string.Empty;
+    private Severity _alertSeverity = Severity.Info;
+    private bool _saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        ApiClient.SetBearerToken(token);
+    }
+
+    private async Task Salvar()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            _message = "Informe o nome da conta.";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
+        try
+        {
+            _saving = true;
+            await ApiClient.CreateAccountAsync(_name.Trim(), _initialBalance);
+            _message = "Conta criada com sucesso!";
+            _alertSeverity = Severity.Success;
+            await Task.Delay(800);
+            Navigation.NavigateTo("/accounts");
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao criar conta: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/accounts");
+}

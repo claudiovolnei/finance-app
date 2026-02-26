@@ -222,6 +222,38 @@ body {
     font-size: 1.35rem !important;
 }
 
+
+.bottom-nav-more-menu {
+    display: flex !important;
+    align-items: stretch;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.bottom-nav-more-menu .mud-button-root {
+    width: 100%;
+    height: 100%;
+    border-radius: 12px;
+    min-height: 58px;
+    color: rgba(15, 23, 42, 0.7);
+    padding: 0 !important;
+}
+
+.bottom-nav-more-activator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    gap: 2px;
+}
+
+.bottom-nav-more-activator .mud-icon-root {
+    margin: 0;
+    font-size: 1.35rem !important;
+}
 .bottom-nav-label {
     font-size: clamp(0.54rem, 2.2vw, 0.68rem);
     line-height: 1rem;
@@ -278,6 +310,10 @@ body {
 
 @media (max-width: 360px) {
     .bottom-nav-link {
+        min-height: 54px;
+    }
+
+    .bottom-nav-more-menu .mud-button-root {
         min-height: 54px;
     }
 
