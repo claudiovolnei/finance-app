@@ -12,7 +12,7 @@
     <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
-        <MudText Typo="Typo.h5">Transações</MudText>
+        <MudText Typo="Typo.h5">Lançamentos</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
             Nova
         </MudButton>
@@ -24,7 +24,7 @@
     }
     else if (_transactions == null || !_transactions.Any())
     {
-        <MudAlert Severity="Severity.Info" Dense="true">Nenhuma transação encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Info" Dense="true">Nenhum lançamento encontrada.</MudAlert>
     }
     else
     {
@@ -123,7 +123,7 @@
         }
         catch (Exception ex)
         {
-            _message = $"Erro ao carregar transações: {ex.Message}";
+            _message = $"Erro ao carregar lançamentos: {ex.Message}";
             _alertSeverity = Severity.Error;
         }
         finally
@@ -171,13 +171,13 @@
         try
         {
             await ApiClient.DeleteTransactionAsync(id);
-            _message = "Transação excluída com sucesso!";
+            _message = "Lançamento excluída com sucesso!";
             _alertSeverity = Severity.Success;
             await LoadTransactions();
         }
         catch (Exception ex)
         {
-            _message = $"Erro ao excluir transação: {ex.Message}";
+            _message = $"Erro ao excluir lançamento: {ex.Message}";
             _alertSeverity = Severity.Error;
         }
     }

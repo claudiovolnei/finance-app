@@ -2,26 +2,9 @@
 @using Finance.Mobile.Services
 @inject AccountSelectionState AccountState
 
-<MudDrawerHeader>
-    <MudSelect T="int?"
-               Value="AccountState.SelectedAccountId"
-               ValueChanged="OnAccountChanged"
-               Dense="true"
-               Variant="Variant.Outlined"
-               FullWidth="true"
-               Label="Conta"
-               Disabled="@(!AccountState.Accounts.Any())"
-               ToStringFunc="GetAccountDisplayName">
-        @foreach (var account in AccountState.Accounts)
-        {
-            <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
-        }
-    </MudSelect>
-</MudDrawerHeader>
-
 <MudNavMenu>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-    <MudNavLink Href="/transactions" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.List">Transações</MudNavLink>
+    <MudNavLink Href="/transactions" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.List">Lançamentos</MudNavLink>
     <MudNavLink Href="/categories" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Category">Categorias</MudNavLink>
     <MudNavLink Href="/accounts" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.AccountBalanceWallet">Contas</MudNavLink>
 </MudNavMenu>
