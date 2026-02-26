@@ -1,6 +1,7 @@
 :root {
-    --safe-top: max(14px, env(safe-area-inset-top, 0px));
+    --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    --appbar-mobile-height: 52px;
 }
 
 html,
@@ -40,6 +41,17 @@ body {
 
 .finance-top-appbar {
     width: 100%;
+}
+
+.month-year-navigator {
+    margin-top: 0.35rem;
+}
+
+.month-year-navigator-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
 }
 
 .finance-main {
@@ -137,8 +149,8 @@ body {
     }
 
     .mud-appbar {
-        padding-top: var(--safe-top) !important;
-        min-height: calc(52px + var(--safe-top));
+        padding-top: calc(var(--safe-top) + 4px) !important;
+        min-height: calc(var(--appbar-mobile-height) + var(--safe-top) + 4px);
     }
 
     .finance-main {
@@ -154,13 +166,13 @@ body {
 
     .main-container {
         margin-top: 0 !important;
-        padding-top: 0.35rem !important;
+        padding-top: 0.75rem !important;
         padding-bottom: calc(90px + var(--safe-bottom)) !important;
     }
 
     .mud-main-content-full {
-        height: calc(100dvh - (52px + var(--safe-top)));
-        padding-top: 0.2rem;
+        height: calc(100dvh - (var(--appbar-mobile-height) + var(--safe-top) + 4px));
+        padding-top: 0.35rem;
         padding-bottom: calc(84px + var(--safe-bottom));
     }
 }
