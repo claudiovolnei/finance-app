@@ -50,7 +50,9 @@
                 }
                 else
                 {
-                    <MudList Dense="true" Class="pa-0">
+                    <MudList T="TransactionSummaryDto"
+                            Dense="true"
+                             Class="pa-0">
                         @foreach (var tx in _summary.LatestTransactions)
                         {
                             <MudListItem Class="px-0">
