@@ -85,9 +85,8 @@
         <MudPaper Class="@GetTransactionPanelClass()" Elevation="6" @onclick:stopPropagation="true">
             <MudStack Spacing="3">
                 <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
-                    <MudStack Spacing="0.5">
+                    <MudStack Spacing="1">
                         <MudText Typo="Typo.caption" Class="transaction-detail-subtitle">Resumo do lançamento</MudText>
-                        <MudText Typo="Typo.h6">Detalhes da Transação</MudText>
                     </MudStack>
                     <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" OnClick="CloseTransactionDialogAsync" />
                 </MudStack>
