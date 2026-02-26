@@ -71,6 +71,7 @@
 
 @code {
     [Parameter] public int Id { get; set; }
+    [Inject] public AccountSelectionState AccountState { get; set; } = default!;
 
     private List<Category> _categories = new();
     private Finance.Mobile.Services.TransactionDto? _transaction;
@@ -87,6 +88,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        AccountState.OnChange += HandleAccountChanged;
         var token = await TokenService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
@@ -148,7 +150,7 @@
             _saving = true;
             await ApiClient.UpdateTransactionAsync(
                 Id,
-                0, // AccountId
+                AccountState.SelectedAccountId.HasValue ? AccountState.SelectedAccountId.Value : 0,
                 _categoryId,
                 _amount,
                 _date,
@@ -209,5 +211,16 @@
         var cents = long.Parse(digits);
         var value = cents / 100m;
         _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+    }
+
+    private async void HandleAccountChanged()
+    {
+        await Task.Delay(1000);
+        Navigation.NavigateTo("/transactions");
+    }
+
+    public void Dispose()
+    {
+        AccountState.OnChange -= HandleAccountChanged;
     }
 }
