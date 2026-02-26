@@ -28,7 +28,8 @@
                            Placeholder="Selecionar conta"
                            AdornmentIcon="@Icons.Material.Filled.AccountBalance"
                            Adornment="Adornment.Start"
-                           Disabled="@(!AccountState.Accounts.Any())">
+                           Disabled="@(!AccountState.Accounts.Any())"
+                           ToStringFunc="GetAccountDisplayName">
                     @foreach (var account in AccountState.Accounts)
                     {
                         <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
@@ -155,6 +156,15 @@
     {
         AccountState.SetSelectedAccount(accountId);
         return Task.CompletedTask;
+    }
+
+
+    private string GetAccountDisplayName(int? accountId)
+    {
+        if (!accountId.HasValue)
+            return string.Empty;
+
+        return AccountState.Accounts.FirstOrDefault(a => a.Id == accountId.Value)?.Name ?? string.Empty;
     }
 
     private string AvatarLetter =>
