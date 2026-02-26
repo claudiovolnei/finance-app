@@ -8,12 +8,12 @@
 @inject TokenService TokenService
 @inject AccountSelectionState AccountState
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 management-page">
     <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
 
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
-        <MudText Typo="Typo.h5">Transações</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="entity-page-header">
+        <MudText Typo="Typo.h5" Class="list-page-title">Transações</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="new-entity-button" OnClick="NavigateToAdd">
             Nova
         </MudButton>
     </MudStack>

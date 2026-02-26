@@ -6,10 +6,10 @@
 @inject NavigationManager Navigation
 @inject TokenService TokenService
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
-        <MudText Typo="Typo.h5">Categorias</MudText>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 management-page">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="entity-page-header">
+        <MudText Typo="Typo.h5" Class="list-page-title">Categorias</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="new-entity-button" OnClick="NavigateToAdd">
             Nova
         </MudButton>
     </MudStack>
