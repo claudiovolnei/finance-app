@@ -4,9 +4,8 @@
 @using Finance.Mobile.Services
 @using Finance.Domain.Entities
 
-<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
-
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
+    <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
@@ -155,7 +154,14 @@
 
     private async void HandleAccountChanged()
     {
-        await LoadSummaryAsync();
+        await InvokeAsync(async () =>
+        {
+            _current = DateTime.Now;
+            _filterYear = _current.Year;
+            _filterMonth = _current.Month;
+            await LoadSummaryAsync();
+            StateHasChanged();
+        });
     }
 
     public void Dispose()
