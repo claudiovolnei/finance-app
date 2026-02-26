@@ -54,7 +54,7 @@
                              Class="pa-0">
                         @foreach (var tx in _summary.LatestTransactions)
                         {
-                            <MudListItem Class="px-0">
+                            <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
                                     <MudStack Spacing="0" Style="min-width:0;">
                                         <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
@@ -79,6 +79,30 @@
     </MudGrid>
 </MudContainer>
 
+@if (_isTransactionPanelVisible && _selectedTransaction is not null)
+{
+    <div class="transaction-detail-overlay" @onclick="CloseTransactionDialogAsync">
+        <MudPaper Class="@GetTransactionPanelClass()" Elevation="6" @onclick:stopPropagation="true">
+            <MudStack Spacing="2">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudText Typo="Typo.h6">Detalhes da Transação</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" OnClick="CloseTransactionDialogAsync" />
+                </MudStack>
+
+                <MudDivider />
+
+                <MudText Typo="Typo.body2"><strong>Categoria:</strong> @_selectedTransaction.CategoryName</MudText>
+                <MudText Typo="Typo.body2"><strong>Descrição:</strong> @(string.IsNullOrWhiteSpace(_selectedTransaction.Description) ? "Sem descrição" : _selectedTransaction.Description)</MudText>
+                <MudText Typo="Typo.body2"><strong>Data:</strong> @_selectedTransaction.Date.ToString("dd/MM/yyyy")</MudText>
+                <MudText Typo="Typo.body2"><strong>Tipo:</strong> @(_selectedTransaction.Type == TransactionType.Income ? "Crédito" : "Débito")</MudText>
+                <MudText Typo="Typo.body2"><strong>Valor:</strong> @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransaction.Amount)</MudText>
+                <MudText Typo="Typo.body2"><strong>ID da Categoria:</strong> @_selectedTransaction.CategoryId</MudText>
+                <MudText Typo="Typo.body2"><strong>ID da Transação:</strong> @_selectedTransaction.Id</MudText>
+            </MudStack>
+        </MudPaper>
+    </div>
+}
+
 @code {
     [Inject] public FinanceApiClient Api { get; set; } = default!;
     [Inject] public TokenService TokenService { get; set; } = default!;
@@ -92,6 +116,10 @@
     private int? _filterYear;
     private int? _filterMonth;
     private DateTime _current = DateTime.Now;
+    private TransactionSummaryDto? _selectedTransaction;
+    private bool _isTransactionDialogOpen;
+    private bool _isTransactionPanelVisible;
+    private const int TransactionPanelAnimationMs = 260;
 
     protected override async Task OnInitializedAsync()
     {
@@ -163,6 +191,27 @@
             StateHasChanged();
         });
     }
+
+    private void OpenTransactionDialog(TransactionSummaryDto transaction)
+    {
+        _selectedTransaction = transaction;
+        _isTransactionPanelVisible = true;
+        _isTransactionDialogOpen = true;
+    }
+
+    private async Task CloseTransactionDialogAsync()
+    {
+        _isTransactionDialogOpen = false;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(TransactionPanelAnimationMs);
+        _isTransactionPanelVisible = false;
+        _selectedTransaction = null;
+    }
+
+    private string GetTransactionPanelClass() =>
+        _isTransactionDialogOpen
+            ? "transaction-detail-dialog transaction-detail-dialog-open"
+            : "transaction-detail-dialog transaction-detail-dialog-close";
 
     public void Dispose()
     {
