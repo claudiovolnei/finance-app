@@ -69,7 +69,6 @@
     private bool _loading = true;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
-    private int? _selectedAccountId;
     private int? _filterYear;
     private int? _filterMonth;
     private DateTime _current = DateTime.Now;
@@ -86,7 +85,6 @@
         }
 
         ApiClient.SetBearerToken(token);
-        _selectedAccountId = AccountState.SelectedAccountId;
         _filterYear = _current.Year;
         _filterMonth = _current.Month;
 
@@ -116,7 +114,7 @@
         try
         {
             _loading = true;
-            _transactions = await ApiClient.GetTransactionsAsync(_filterYear, _filterMonth, _selectedAccountId);
+            _transactions = await ApiClient.GetTransactionsAsync(_filterYear, _filterMonth, AccountState.SelectedAccountId);
         }
         catch (UnauthorizedAccessException)
         {
@@ -186,7 +184,6 @@
 
     private async void HandleGlobalAccountChanged()
     {
-        _selectedAccountId = AccountState.SelectedAccountId;
         await LoadTransactions();
     }
 

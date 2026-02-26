@@ -58,8 +58,10 @@
     }
 </MudContainer>
 
-@code {
+    @code {
     private List<Category> _categories = new();
+    [Inject]
+    public AccountSelectionState AccountState { get; set; } = default!;
     private int _categoryId;
     private decimal _amount;
     private string _amountText = "0,00";
@@ -123,7 +125,7 @@
 
             _saving = true;
             await ApiClient.CreateTransactionAsync(
-                0, // AccountId - pode ser implementado depois
+                AccountState.SelectedAccountId.HasValue ? AccountState.SelectedAccountId.Value : 0,
                 _categoryId,
                 _amount,
                 _date,
