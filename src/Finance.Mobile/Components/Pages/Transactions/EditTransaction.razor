@@ -17,7 +17,7 @@
     }
     else if (_transaction == null)
     {
-        <MudAlert Severity="Severity.Error">Transação não encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Error">Lançamento não encontrada.</MudAlert>
     }
     else
     {
@@ -160,7 +160,7 @@
                 _description ?? string.Empty,
                 _type);
 
-            _message = "Transação atualizada com sucesso!";
+            _message = "Lançamento atualizada com sucesso!";
             _alertSeverity = Severity.Success;
             
             await Task.Delay(1000);
@@ -172,7 +172,7 @@
         }
         catch (Exception ex)
         {
-            _message = $"Erro ao atualizar transação: {ex.Message}";
+            _message = $"Erro ao atualizar lançamento: {ex.Message}";
             _alertSeverity = Severity.Error;
         }
         finally
