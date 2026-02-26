@@ -48,8 +48,8 @@
                 <MudMenu OffsetY="true">
                     <ActivatorContent>
                         <MudAvatar Size="Size.Medium"
-                                   Class="ml-2 avatar-letter"
-                                   Color="@AvatarColor">
+                                   Class="ml-2 avatar-letter avatar-neutral"
+                                   Color="Color.Default">
                                 @AvatarLetter
                         </MudAvatar>
                     </ActivatorContent>
@@ -171,27 +171,6 @@
         string.IsNullOrWhiteSpace(_name)
             ? "?"
             : _name.Trim().Substring(0, 1).ToUpper();
-
-    private Color AvatarColor =>
-        string.IsNullOrWhiteSpace(_name)
-            ? Color.Default
-            : GetColorFromName(_name);
-
-    private Color GetColorFromName(string name)
-    {
-        var colors = new[]
-        {
-            Color.Primary,
-            Color.Secondary,
-            Color.Tertiary,
-            Color.Info,
-            Color.Success,
-            Color.Warning
-        };
-
-        var hash = name.GetHashCode();
-        return colors[Math.Abs(hash) % colors.Length];
-    }
 
     private void DrawerToggle() => _drawerOpen = !_drawerOpen;
     private void GoToProfile() => Navigation.NavigateTo("/profile");

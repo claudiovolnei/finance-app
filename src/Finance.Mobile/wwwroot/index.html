@@ -11,7 +11,21 @@
 </head>
 <body>
     <div class="status-bar-safe-area"></div>
-    <div id="app">Loading...</div>
+    <div id="app">
+        <div class="startup-loader" role="status" aria-live="polite" aria-label="Inicializando aplicativo de finanças">
+            <div class="startup-loader-card">
+                <p class="startup-loader-title">Finance App</p>
+                <div class="finance-bars" aria-hidden="true">
+                    <div class="finance-bar" style="height: 34%;"></div>
+                    <div class="finance-bar" style="height: 58%;"></div>
+                    <div class="finance-bar" style="height: 82%;"></div>
+                    <div class="finance-bar" style="height: 68%;"></div>
+                </div>
+                <div class="finance-line" aria-hidden="true"></div>
+                <p class="startup-loader-subtitle">Organizando seus lançamentos...</p>
+            </div>
+        </div>
+    </div>
     <div id="blazor-error-ui" data-nosnippet>
         An unhandled error has occurred.
         <a href="." class="reload">Reload</a>
