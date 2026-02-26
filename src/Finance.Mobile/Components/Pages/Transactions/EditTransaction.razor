@@ -1,4 +1,5 @@
 @page "/transactions/edit/{Id:int}"
+@implements IDisposable
 @using MudBlazor
 @using Finance.Domain.Entities
 @using Finance.Mobile.Services
@@ -7,6 +8,8 @@
 @inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MonthYearNavigator CurrentLabel="@CurrentMonthLabel" OnPrevious="PreviousMonth" OnNext="NextMonth" />
+
     <MudText Typo="Typo.h4" Class="mb-4">Editar Transação</MudText>
 
     @if (_loading)
@@ -85,6 +88,7 @@
     private Severity _alertSeverity = Severity.Info;
     private bool _loading = true;
     private bool _saving = false;
+    private string CurrentMonthLabel => _date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,10 +217,25 @@
         _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     }
 
+    private Task PreviousMonth()
+    {
+        _date = _date.AddMonths(-1);
+        return Task.CompletedTask;
+    }
+
+    private Task NextMonth()
+    {
+        _date = _date.AddMonths(1);
+        return Task.CompletedTask;
+    }
+
     private async void HandleAccountChanged()
     {
-        await Task.Delay(1000);
-        Navigation.NavigateTo("/transactions");
+        await InvokeAsync(() =>
+        {
+            Navigation.NavigateTo("/transactions");
+            return Task.CompletedTask;
+        });
     }
 
     public void Dispose()

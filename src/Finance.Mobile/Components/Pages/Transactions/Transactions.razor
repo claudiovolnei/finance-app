@@ -8,9 +8,9 @@
 @inject TokenService TokenService
 @inject AccountSelectionState AccountState
 
-<MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
-
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
+
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
         <MudText Typo="Typo.h5">Transações</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
@@ -184,7 +184,14 @@
 
     private async void HandleGlobalAccountChanged()
     {
-        await LoadTransactions();
+        await InvokeAsync(async () =>
+        {
+            _current = DateTime.Now;
+            _filterYear = _current.Year;
+            _filterMonth = _current.Month;
+            await LoadTransactions();
+            StateHasChanged();
+        });
     }
 
     public void Dispose()

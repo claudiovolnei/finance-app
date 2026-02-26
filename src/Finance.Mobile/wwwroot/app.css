@@ -33,6 +33,7 @@ body {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    padding-top: 0.5rem;
 }
 
 .finance-layout {
@@ -45,6 +46,8 @@ body {
 
 .month-year-navigator {
     margin-top: 0.35rem;
+    position: relative;
+    z-index: 2;
 }
 
 .month-year-navigator-content {
@@ -172,7 +175,7 @@ body {
 
     .mud-main-content-full {
         height: calc(100dvh - (var(--appbar-mobile-height) + var(--safe-top) + 4px));
-        padding-top: 0.35rem;
+        padding-top: 0.75rem;
         padding-bottom: calc(84px + var(--safe-bottom));
     }
 }
