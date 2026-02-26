@@ -10,7 +10,8 @@
                Variant="Variant.Outlined"
                FullWidth="true"
                Label="Conta"
-               Disabled="@(!AccountState.Accounts.Any())">
+               Disabled="@(!AccountState.Accounts.Any())"
+               ToStringFunc="GetAccountDisplayName">
         @foreach (var account in AccountState.Accounts)
         {
             <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
@@ -26,6 +27,14 @@
 </MudNavMenu>
 
 @code {
+    private string GetAccountDisplayName(int? accountId)
+    {
+        if (!accountId.HasValue)
+            return string.Empty;
+
+        return AccountState.Accounts.FirstOrDefault(a => a.Id == accountId.Value)?.Name ?? string.Empty;
+    }
+
     private Task OnAccountChanged(int? accountId)
     {
         AccountState.SetSelectedAccount(accountId);
