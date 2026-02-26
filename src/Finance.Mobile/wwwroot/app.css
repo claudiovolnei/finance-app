@@ -31,6 +31,7 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
 }
 
 .finance-layout {
@@ -136,11 +137,12 @@ body {
     }
 
     .mud-appbar {
-        min-height: 52px;
+        padding-top: var(--safe-top) !important;
+        min-height: calc(52px + var(--safe-top));
     }
 
     .finance-main {
-        padding: 6px 0 96px;
+        padding: 10px 0 96px;
     }
 
     .finance-main-container {
@@ -151,12 +153,14 @@ body {
     }
 
     .main-container {
-        margin-top: 0.25rem !important;
+        margin-top: 0 !important;
+        padding-top: 0.35rem !important;
         padding-bottom: calc(90px + var(--safe-bottom)) !important;
     }
 
     .mud-main-content-full {
-        height: calc(100dvh - 52px);
+        height: calc(100dvh - (52px + var(--safe-top)));
+        padding-top: 0.2rem;
         padding-bottom: calc(84px + var(--safe-bottom));
     }
 }
