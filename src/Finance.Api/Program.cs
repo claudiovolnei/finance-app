@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using Finance.Api.Extensions;
 using Finance.Infrastructure.Persistence;
 using Finance.Infrastructure.Repositories;
@@ -106,6 +108,7 @@ var app = builder.Build();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 // Database migration
 using (var scope = app.Services.CreateScope())
@@ -137,7 +140,46 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     }
 });
 
+if (!app.Environment.IsDevelopment())
+{
+    var swaggerUser = builder.Configuration["SwaggerAuth:Username"];
+    var swaggerPassword = builder.Configuration["SwaggerAuth:Password"];
+
+    if (!string.IsNullOrWhiteSpace(swaggerUser) && !string.IsNullOrWhiteSpace(swaggerPassword))
+    {
+        app.UseWhen(context => context.Request.Path.StartsWithSegments("/swagger"), branch =>
+        {
+            branch.Use(async (context, next) =>
+            {
+                var authHeader = context.Request.Headers.Authorization.ToString();
+                if (authHeader.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var encodedCredentials = authHeader["Basic ".Length..].Trim();
+                        var decodedCredentials = Encoding.UTF8.GetString(Convert.FromBase64String(encodedCredentials));
+                        var parts = decodedCredentials.Split(':', 2);
+
+                        if (parts.Length == 2 && parts[0] == swaggerUser && parts[1] == swaggerPassword)
+                        {
+                            await next();
+                            return;
+                        }
+                    }
+                    catch (FormatException) { }
+                }
+
+                context.Response.Headers.WWWAuthenticate = "Basic realm=\"Swagger\"";
+                context.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+            });
+        });
+    }
+}
+
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(options =>
+{
+    options.InjectJavascript("/swagger/swagger-auth.js");
+});
 
 app.Run();

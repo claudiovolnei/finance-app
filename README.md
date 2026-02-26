@@ -102,6 +102,27 @@ dotnet ef database update --project ../Finance.Infrastructure/Finance.Infrastruc
 
 As migrations são aplicadas automaticamente na inicialização da API.
 
+
+### Swagger em produção (com senha)
+
+Para manter o Swagger habilitado em produção com proteção, configure as variáveis:
+
+- `SwaggerAuth:Username`
+- `SwaggerAuth:Password`
+
+Exemplo em `appsettings`:
+
+```json
+"SwaggerAuth": {
+  "Username": "admin",
+  "Password": "senha-forte"
+}
+```
+
+Quando essas chaves estiverem preenchidas fora de `Development`, o acesso a `/swagger` exigirá autenticação **Basic Auth**.
+
+Além disso, no Swagger UI, ao realizar `POST /auth/login`, o token retornado é aplicado automaticamente no esquema `Bearer` para os próximos requests.
+
 ### API
 
 ```bash
