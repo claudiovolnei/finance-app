@@ -7,11 +7,12 @@
 @inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
-    <MudText Typo="Typo.h4" Class="mb-4">Categorias</MudText>
-
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd" Class="mb-4">
-        Nova Categoria
-    </MudButton>
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudText Typo="Typo.h5">Categorias</MudText>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="NavigateToAdd">
+            Nova
+        </MudButton>
+    </MudStack>
 
     @if (_loading)
     {
@@ -19,28 +20,33 @@
     }
     else if (_categories == null || !_categories.Any())
     {
-        <MudAlert Severity="Severity.Info">Nenhuma categoria encontrada.</MudAlert>
+        <MudAlert Severity="Severity.Info" Dense="true">Nenhuma categoria encontrada.</MudAlert>
     }
     else
     {
-        <MudTable Items="@_categories" Hover="true" Dense="true" Striped="true">
-            <HeaderContent>
-                <MudTh>Nome</MudTh>
-                <MudTh>Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Nome">@context.Name</MudTd>
-                <MudTd DataLabel="Ações">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(context.Id))" />
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_categories.Count categorias</MudText>
+            <MudList Dense="true" Class="pa-0">
+                @foreach (var category in _categories)
+                {
+                    <MudListItem Class="px-0">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudText Typo="Typo.body2">@category.Name</MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(category.Id))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(category.Id))" />
+                            </MudStack>
+                        </MudStack>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
+        </MudPaper>
     }
 
     @if (!string.IsNullOrEmpty(_message))
     {
-        <MudAlert Severity="@_alertSeverity" Class="mt-4">@_message</MudAlert>
+        <MudAlert Severity="@_alertSeverity" Dense="true" Class="mt-3">@_message</MudAlert>
     }
 </MudContainer>
 

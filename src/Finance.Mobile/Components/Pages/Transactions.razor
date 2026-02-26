@@ -18,16 +18,6 @@
         </MudButton>
     </MudStack>
 
-    @if (!_loading && _transactions is { Count: > 0 })
-    {
-        <MudPaper Class="pa-3 mb-3" Elevation="0" Outlined="true">
-            <MudStack Row="true" Justify="Justify.SpaceBetween">
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">Total de lançamentos</MudText>
-                <MudText Typo="Typo.subtitle2">@_transactions.Count</MudText>
-            </MudStack>
-        </MudPaper>
-    }
-
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
@@ -38,33 +28,34 @@
     }
     else
     {
-        <MudTable Items="@_transactions" Hover="true" Dense="true" Breakpoint="Breakpoint.Sm" Class="elevation-0" Bordered="false" Striped="false">
-            <HeaderContent>
-                <MudTh>Data</MudTh>
-                <MudTh>Categoria</MudTh>
-                <MudTh Style="text-align:right;">Valor</MudTh>
-                <MudTh>Tipo</MudTh>
-                <MudTh>Ações</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Data">@context.Date.ToString("dd/MM/yyyy")</MudTd>
-                <MudTd DataLabel="Categoria">@context.CategoryName</MudTd>
-                <MudTd DataLabel="Valor" Style="text-align:right;">
-                    <MudText Typo="Typo.body2" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)">
-                        @context.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
-                    </MudText>
-                </MudTd>
-                <MudTd DataLabel="Tipo">
-                    <MudChip T="string" Color="@(context.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
-                        @(context.Type == TransactionType.Income ? "Crédito" : "Débito")
-                    </MudChip>
-                </MudTd>
-                <MudTd DataLabel="Ações">
-                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(context.Id))" />
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
+        <MudPaper Class="pa-4" Elevation="1">
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_transactions.Count lançamentos no período</MudText>
+            <MudList Dense="true" Class="pa-0">
+                @foreach (var tx in _transactions)
+                {
+                    <MudListItem Class="px-0">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                            <MudStack Spacing="0">
+                                <MudText Typo="Typo.body2">@tx.CategoryName</MudText>
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                            </MudStack>
+
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
+                                    @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
+                                </MudChip>
+                                <MudText Typo="Typo.body2" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                                    @tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
+                                </MudText>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" />
+                            </MudStack>
+                        </MudStack>
+                    </MudListItem>
+                    <MudDivider />
+                }
+            </MudList>
+        </MudPaper>
     }
 
     @if (!string.IsNullOrEmpty(_message))
