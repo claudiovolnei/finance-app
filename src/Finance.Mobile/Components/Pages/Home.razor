@@ -11,19 +11,19 @@
         <MudItem xs="12" sm="12">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
-                <MudText Typo="Typo.h5" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.Balance))</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Success">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Success">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="6" sm="6">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Despesas</MudText>
-                <MudText Typo="Typo.h5" Color="Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalExpense))</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalExpense))</MudText>
             </MudPaper>
         </MudItem>
 
@@ -57,15 +57,15 @@
                         {
                             <MudListItem Class="px-0">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                                    <MudStack Spacing="0">
-                                        <MudText Typo="Typo.body2">@tx.CategoryName</MudText>
-                                        <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                    <MudStack Spacing="0" Style="min-width:0;">
+                                        <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
                                     </MudStack>
                                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                         <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
                                             @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
                                         </MudChip>
-                                        <MudText Typo="Typo.body2" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                                        <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
                                             @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
                                         </MudText>
                                     </MudStack>
