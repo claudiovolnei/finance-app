@@ -364,11 +364,37 @@ body {
 .transaction-detail-dialog {
     width: 100%;
     max-width: 100%;
-    min-height: 60dvh;
+    min-height: 54dvh;
     border-radius: 20px 20px 0 0;
-    padding: 20px;
+    padding: 22px 20px 26px;
     transform: translateY(100%);
-    opacity: 0.96;
+    opacity: 0.98;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.transaction-detail-subtitle {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.transaction-highlight-card {
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(248, 250, 252, 0.9);
+}
+
+.transaction-detail-grid {
+    margin-top: -4px;
+}
+
+.transaction-detail-item {
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: #ffffff;
 }
 
 .transaction-detail-dialog-open {

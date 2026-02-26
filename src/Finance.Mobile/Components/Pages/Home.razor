@@ -83,21 +83,56 @@
 {
     <div class="transaction-detail-overlay" @onclick="CloseTransactionDialogAsync">
         <MudPaper Class="@GetTransactionPanelClass()" Elevation="6" @onclick:stopPropagation="true">
-            <MudStack Spacing="2">
-                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-                    <MudText Typo="Typo.h6">Detalhes da Transação</MudText>
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Start">
+                    <MudStack Spacing="0.5">
+                        <MudText Typo="Typo.caption" Class="transaction-detail-subtitle">Resumo do lançamento</MudText>
+                        <MudText Typo="Typo.h6">Detalhes da Transação</MudText>
+                    </MudStack>
                     <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Default" Size="Size.Small" OnClick="CloseTransactionDialogAsync" />
                 </MudStack>
 
+                <MudPaper Class="transaction-highlight-card" Elevation="0">
+                    <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Valor da transação</MudText>
+                            <MudText Typo="Typo.h5" Color="@GetTransactionColor(_selectedTransaction.Type)">
+                                @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransaction.Amount)
+                            </MudText>
+                        </MudStack>
+                        <MudChip T="string"
+                                 Color="@GetTransactionColor(_selectedTransaction.Type)"
+                                 Variant="Variant.Filled"
+                                 Size="Size.Small">
+                            @(_selectedTransaction.Type == TransactionType.Income ? "Receita" : "Despesa")
+                        </MudChip>
+                    </MudStack>
+                </MudPaper>
+
+                <MudGrid Class="transaction-detail-grid" GutterSize="GutterSize.Small">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Class="transaction-detail-item" Elevation="0">
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Categoria</MudText>
+                            <MudText Typo="Typo.body1">@_selectedTransaction.CategoryName</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Class="transaction-detail-item" Elevation="0">
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Data</MudText>
+                            <MudText Typo="Typo.body1">@_selectedTransaction.Date.ToString("dd/MM/yyyy")</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudPaper Class="transaction-detail-item" Elevation="0">
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Descrição</MudText>
+                            <MudText Typo="Typo.body1">@(string.IsNullOrWhiteSpace(_selectedTransaction.Description) ? "Sem descrição informada" : _selectedTransaction.Description)</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+
                 <MudDivider />
 
-                <MudText Typo="Typo.body2"><strong>Categoria:</strong> @_selectedTransaction.CategoryName</MudText>
-                <MudText Typo="Typo.body2"><strong>Descrição:</strong> @(string.IsNullOrWhiteSpace(_selectedTransaction.Description) ? "Sem descrição" : _selectedTransaction.Description)</MudText>
-                <MudText Typo="Typo.body2"><strong>Data:</strong> @_selectedTransaction.Date.ToString("dd/MM/yyyy")</MudText>
-                <MudText Typo="Typo.body2"><strong>Tipo:</strong> @(_selectedTransaction.Type == TransactionType.Income ? "Crédito" : "Débito")</MudText>
-                <MudText Typo="Typo.body2"><strong>Valor:</strong> @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransaction.Amount)</MudText>
-                <MudText Typo="Typo.body2"><strong>ID da Categoria:</strong> @_selectedTransaction.CategoryId</MudText>
-                <MudText Typo="Typo.body2"><strong>ID da Transação:</strong> @_selectedTransaction.Id</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">Referência da transação #@_selectedTransaction.Id</MudText>
             </MudStack>
         </MudPaper>
     </div>
@@ -212,6 +247,9 @@
         _isTransactionDialogOpen
             ? "transaction-detail-dialog transaction-detail-dialog-open"
             : "transaction-detail-dialog transaction-detail-dialog-close";
+
+    private Color GetTransactionColor(TransactionType type) =>
+        type == TransactionType.Income ? Color.Success : Color.Error;
 
     public void Dispose()
     {
