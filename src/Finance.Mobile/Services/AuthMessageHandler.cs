@@ -1,21 +1,15 @@
-using System.Net.Http;
 using System.Net;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Maui.ApplicationModel;
 
 namespace Finance.Mobile.Services;
 
 public class AuthMessageHandler : DelegatingHandler
 {
     private readonly TokenService _tokenService;
-    private readonly NavigationManager _nav;
 
-    public AuthMessageHandler(TokenService tokenService, NavigationManager nav)
+    public AuthMessageHandler(TokenService tokenService)
     {
         _tokenService = tokenService;
-        _nav = nav;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)

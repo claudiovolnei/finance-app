@@ -7,7 +7,7 @@
 @inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page">
-    <MudText Typo="Typo.h4" Class="mb-4 form-page-title">Nova Transação</MudText>
+    <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Novo lançamento</MudText>
 
     <MudForm>
         @if (_categories.Any())
@@ -132,7 +132,7 @@
                 _description ?? string.Empty,
                 _type);
 
-            _message = "Transação criada com sucesso!";
+            _message = "Lançamento criado com sucesso!";
             _alertSeverity = Severity.Success;
             
             await Task.Delay(1000);
@@ -144,7 +144,7 @@
         }
         catch (Exception ex)
         {
-            _message = $"Erro ao criar transação: {ex.Message}";
+            _message = $"Erro ao criar lançamento: {ex.Message}";
             _alertSeverity = Severity.Error;
         }
         finally
