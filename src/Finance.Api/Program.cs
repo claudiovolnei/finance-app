@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
+using ElmahCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,8 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
+
+builder.Services.AddElmah();
 
 builder.Services.AddCors(options =>
 {
@@ -105,6 +108,7 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
+app.UseElmah();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

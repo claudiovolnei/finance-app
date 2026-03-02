@@ -31,7 +31,7 @@ public static class DashboardEndpoints
 
         var totalIncome = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Income).Sum(t => t.Amount);
         var totalExpense = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Expense).Sum(t => t.Amount);
-        var balance = totalIncome - totalExpense;
+        var balance = await transactionRepo.GetBalanceTotal(userId, year ?? DateTime.Now.Year, accountId ?? 0);
 
         var categoryTotals = transactions
             .GroupBy(t => new { t.CategoryId, t.Type })

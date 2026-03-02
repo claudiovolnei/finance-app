@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Finance.Domain.Entities;
 using Finance.Infrastructure.Persistence;
 using Finance.Application.Repositories;
+using System.Net;
 
 namespace Finance.Infrastructure.Repositories;
 
@@ -54,5 +55,12 @@ public class TransactionRepository : ITransactionRepository
             _context.Transactions.Remove(transaction);
             await _context.SaveChangesAsync();
         }
+    }
+
+    public Task<decimal> GetBalanceTotal(int userId, int year, int accountId)
+    {
+        return _context.Transactions
+            .Where(t => t.UserId == userId && t.Date.Year == year &&  t.AccountId == accountId)
+            .SumAsync(t => t.Type == TransactionType.Income ? t.Amount : -t.Amount);
     }
 }
