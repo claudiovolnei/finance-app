@@ -70,7 +70,7 @@ public static class TransactionEndpoints
             t.Amount,
             t.Date,
             t.Description,
-            t.Type)).ToList();
+            t.Type)).OrderByDescending(o => o.Date).ToList();
         return Results.Ok(dtos);
     }
 

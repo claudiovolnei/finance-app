@@ -32,6 +32,12 @@
                     <MudListItem Class="px-0">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
                             <MudText Typo="Typo.body2" Class="list-primary-text">@category.Name</MudText>
+                            <MudChip T="string"
+                                     Color="@GetTransactionColor(@category.Type)"
+                                     Variant="Variant.Filled"
+                                     Size="Size.Small">
+                                @(category.Type == TransactionType.Income ? "Receita" : "Despesa")
+                            </MudChip>
                             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(category.Id))" />
                                 <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(category.Id))" />
@@ -55,6 +61,9 @@
     private bool _loading = true;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
+
+    private Color GetTransactionColor(TransactionType type) =>
+        type == TransactionType.Income ? Color.Success : Color.Error;
 
     protected override async Task OnInitializedAsync()
     {

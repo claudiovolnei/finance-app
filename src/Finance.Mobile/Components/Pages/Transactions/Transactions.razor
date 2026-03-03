@@ -10,6 +10,26 @@
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 management-page">
     <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
+    <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
+        <MudItem xs="12" sm="12">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="_totalBalanceMonth > 0 ? Color.Success : Color.Error">@(string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _totalBalanceMonth))</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="6" sm="6">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Receitas</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Success">@(_transactions is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _totalIncomeMonth))</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="6" sm="6">
+            <MudPaper Class="pa-4 card-center" Elevation="1">
+                <MudText Typo="Typo.subtitle1">Despesas</MudText>
+                <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Error">@(_transactions is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}",_totalExpenseMonth))</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="entity-page-header">
         <MudText Typo="Typo.h5" Class="list-page-title">Transações</MudText>
@@ -64,7 +84,7 @@
     }
 </MudContainer>
 
-@code {
+    @code {
     private List<TransactionDto>? _transactions;
     private bool _loading = true;
     private string _message = "";
@@ -72,6 +92,9 @@
     private int? _filterYear;
     private int? _filterMonth;
     private DateTime _current = DateTime.Now;
+    private decimal _totalBalanceMonth = 0;
+    private decimal _totalIncomeMonth = 0;
+    private decimal _totalExpenseMonth = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,6 +138,9 @@
         {
             _loading = true;
             _transactions = await ApiClient.GetTransactionsAsync(_filterYear, _filterMonth, AccountState.SelectedAccountId);
+            _totalBalanceMonth = _transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount) - _transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+            _totalIncomeMonth = _transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
+            _totalExpenseMonth = _transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
         }
         catch (UnauthorizedAccessException)
         {

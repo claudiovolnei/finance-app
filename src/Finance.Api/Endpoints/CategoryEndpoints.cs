@@ -81,7 +81,7 @@ public static class CategoryEndpoints
             if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
-            var category = await useCase.ExecuteAsync(request.Name, userId);
+            var category = await useCase.ExecuteAsync(request.Name, userId, request.Type);
             return Results.Ok(category);
         }
         catch (Exception ex)

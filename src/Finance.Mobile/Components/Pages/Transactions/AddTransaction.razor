@@ -10,9 +10,14 @@
     <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Novo lançamento</MudText>
 
     <MudForm>
+        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true" Class="mt-4">
+            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+        </MudSelect>
+
         @if (_categories.Any())
         {
-            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
+            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true">
                 @foreach (var category in _categories)
                 {
                     <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
@@ -24,10 +29,6 @@
             <div class="mt-2"><MudProgressLinear Indeterminate="true" Color="Color.Primary" /></div>
         }
 
-        <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
-            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
-            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
-        </MudSelect>
 
         <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Class="mt-4"
                       Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
@@ -83,11 +84,22 @@
         await LoadCategories();
     }
 
+    private async Task OnTypeChanged(TransactionType value)
+    {
+        _type = value;
+        StateHasChanged();
+        await LoadCategories();
+    }
+
     private async Task LoadCategories()
     {
         try
         {
+            _categories = [];
+            StateHasChanged();
+
             _categories = await ApiClient.GetCategoriesAsync();
+            _categories = _categories.Where(c => c.Type == _type).ToList();
             if (_categories.Any())
             {
                 _categoryId = _categories.First().Id;

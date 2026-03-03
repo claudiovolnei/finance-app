@@ -10,6 +10,10 @@
     <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Nova categoria</MudText>
 
     <MudForm>
+        <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
+            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+        </MudSelect>
         <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
 
         <MudButtonGroup Class="mt-4">
@@ -36,6 +40,7 @@
 
     @code {
     private string _name = "";
+    private TransactionType _type = TransactionType.Expense;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private bool _saving = false;
@@ -62,7 +67,7 @@
         try
         {
             _saving = true;
-            await ApiClient.CreateCategoryAsync(_name);
+            await ApiClient.CreateCategoryAsync(_name, _type);
 
             _message = "Categoria criada com sucesso!";
             _alertSeverity = Severity.Success;

@@ -179,9 +179,9 @@ public class FinanceApiClient
         return await resp.Content.ReadFromJsonAsync<Category>();
     }
 
-    public async Task<Category> CreateCategoryAsync(string name)
+    public async Task<Category> CreateCategoryAsync(string name, TransactionType type)
     {
-        var request = new CreateCategoryRequest(name);
+        var request = new CreateCategoryRequest(name, type);
         var response = await _httpClient.PostAsJsonAsync(Url("categories"), request);
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
@@ -265,7 +265,7 @@ public class FinanceApiClient
         string? Description,
         TransactionType Type);
 
-    private record CreateCategoryRequest(string Name);
+    private record CreateCategoryRequest(string Name, TransactionType type);
     private record UpdateCategoryRequest(string Name);
     private record CreateAccountRequest(string Name, decimal InitialBalance);
     private record UpdateAccountRequest(string Name, decimal InitialBalance);
