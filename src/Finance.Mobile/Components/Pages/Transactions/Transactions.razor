@@ -67,8 +67,12 @@
                                 <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
                                     @tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
                                 </MudText>
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" @onclick:stopPropagation="true" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" @onclick:stopPropagation="true" />
+                                <span @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />
+                                </span>
+                                <span @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" />
+                                </span>
                             </MudStack>
                         </MudStack>
                     </MudListItem>
