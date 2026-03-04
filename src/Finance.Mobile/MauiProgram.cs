@@ -37,6 +37,7 @@ public static class MauiProgram
 
         // Token service for storing JWT
         builder.Services.AddSingleton<TokenService>();
+        builder.Services.AddSingleton<BiometricAuthService>();
 
         builder.Services.AddSingleton<AccountSelectionState>();
 

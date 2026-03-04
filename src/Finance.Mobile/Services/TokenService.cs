@@ -3,6 +3,9 @@ namespace Finance.Mobile.Services;
 public class TokenService
 {
     private const string TOKEN_KEY = "finance_mobile_token";
+    private const string BIOMETRIC_ENABLED_KEY = "finance_mobile_biometric_enabled";
+    private const string BIOMETRIC_LAST_AUTH_UTC_KEY = "finance_mobile_biometric_last_auth_utc";
+    private const int BIOMETRIC_EXPIRATION_MINUTES = 15;
 
     public async Task SaveTokenAsync(string token)
     {
@@ -42,8 +45,43 @@ public class TokenService
         {
             Preferences.Remove(TOKEN_KEY);
         }
+
+        DisableBiometricLogin();
         await Task.CompletedTask;
     }
+
+    public void EnableBiometricLogin()
+    {
+        Preferences.Set(BIOMETRIC_ENABLED_KEY, true);
+        MarkBiometricAuthentication();
+    }
+
+    public void DisableBiometricLogin()
+    {
+        Preferences.Remove(BIOMETRIC_ENABLED_KEY);
+        Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
+    }
+
+    public bool IsBiometricLoginEnabled() => Preferences.Get(BIOMETRIC_ENABLED_KEY, false);
+
+    public bool RequiresBiometricAuthentication()
+    {
+        if (!IsBiometricLoginEnabled())
+            return false;
+
+        var lastAuthRaw = Preferences.Get(BIOMETRIC_LAST_AUTH_UTC_KEY, null as string);
+        if (string.IsNullOrWhiteSpace(lastAuthRaw) || !DateTimeOffset.TryParse(lastAuthRaw, out var lastAuthUtc))
+            return true;
+
+        return DateTimeOffset.UtcNow - lastAuthUtc > TimeSpan.FromMinutes(BIOMETRIC_EXPIRATION_MINUTES);
+    }
+
+    public void MarkBiometricAuthentication()
+    {
+        Preferences.Set(BIOMETRIC_LAST_AUTH_UTC_KEY, DateTimeOffset.UtcNow.ToString("O"));
+    }
+
+    public int GetBiometricExpirationMinutes() => BIOMETRIC_EXPIRATION_MINUTES;
 
     // Decode JWT token (no validation) and return the 'unique name' or Name claim if present
     public async Task<string?> GetUsernameAsync()
