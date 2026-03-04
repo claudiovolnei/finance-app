@@ -1,31 +1,103 @@
 @page "/login"
 @inject Finance.Mobile.Services.FinanceApiClient Api
 @inject Finance.Mobile.Services.TokenService TokenService
+@inject Finance.Mobile.Services.BiometricAuthService BiometricAuthService
 @inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
     <MudPaper Class="pa-4">
         <MudText Typo="Typo.h5">Login</MudText>
-        <MudTextField @bind-Value="_username" Label="Usu�rio" Class="mb-3" />
+        <MudTextField @bind-Value="_username" Label="Usuário" Class="mb-3" />
         <MudTextField @bind-Value="_password" Label="Senha" InputType="InputType.Password" Class="mb-3" />
-        <div style="display:flex;justify-content:center;margin-top:12px;">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar</MudButton>
-        </div>
+
+        <MudStack Spacing="2" Class="mt-4">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
+            @if (_showBiometricButton)
+            {
+                <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="DoBiometricLogin" Class="px-6">
+                    Entrar com biometria
+                </MudButton>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                    A biometria será solicitada novamente após @_biometricExpirationMinutes minutos.
+                </MudText>
+            }
+        </MudStack>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <MudAlert Severity="@_severity" Dense="true" Class="mt-3">@_message</MudAlert>
+        }
     </MudPaper>
 </MudContainer>
 
 @code {
     private string _username = string.Empty;
     private string _password = string.Empty;
+    private string _message = string.Empty;
+    private Severity _severity = Severity.Info;
+    private bool _showBiometricButton;
+    private int _biometricExpirationMinutes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _biometricExpirationMinutes = TokenService.GetBiometricExpirationMinutes();
+        await RefreshBiometricStateAsync();
+    }
+
+    private async Task RefreshBiometricStateAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        _showBiometricButton =
+            !string.IsNullOrEmpty(token)
+            && TokenService.IsBiometricLoginEnabled()
+            && await BiometricAuthService.IsAvailableAsync();
+    }
 
     private async Task DoLogin()
     {
+        _message = string.Empty;
+
         var token = await Api.LoginAsync(_username, _password);
-        if (!string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(token))
         {
-            await TokenService.SaveTokenAsync(token);
-            // FinanceApiClient will pick token via AuthMessageHandler on next requests
-            Navigation.NavigateTo("/");
+            _message = "Usuário ou senha inválidos.";
+            _severity = Severity.Error;
+            return;
         }
+
+        await TokenService.SaveTokenAsync(token);
+
+        if (await BiometricAuthService.IsAvailableAsync())
+        {
+            TokenService.EnableBiometricLogin();
+            _message = "Login efetuado. Biometria ativada para próximos acessos.";
+            _severity = Severity.Success;
+        }
+
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task DoBiometricLogin()
+    {
+        _message = string.Empty;
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _message = "Faça login com senha primeiro para ativar a biometria.";
+            _severity = Severity.Warning;
+            _showBiometricButton = false;
+            return;
+        }
+
+        var authenticated = await BiometricAuthService.AuthenticateAsync("Confirme sua biometria para entrar");
+        if (!authenticated)
+        {
+            _message = "Não foi possível autenticar com biometria.";
+            _severity = Severity.Error;
+            return;
+        }
+
+        TokenService.MarkBiometricAuthentication();
+        Navigation.NavigateTo("/");
     }
 }
