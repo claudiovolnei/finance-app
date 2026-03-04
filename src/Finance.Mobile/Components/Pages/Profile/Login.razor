@@ -2,13 +2,18 @@
 @inject Finance.Mobile.Services.FinanceApiClient Api
 @inject Finance.Mobile.Services.TokenService TokenService
 @inject Finance.Mobile.Services.BiometricAuthService BiometricAuthService
+@inject IDialogService DialogService
 @inject NavigationManager Navigation
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-6">
-    <MudPaper Class="pa-4">
-        <MudText Typo="Typo.h5">Login</MudText>
-        <MudTextField @bind-Value="_username" Label="Usuário" Class="mb-3" />
-        <MudTextField @bind-Value="_password" Label="Senha" InputType="InputType.Password" Class="mb-3" />
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+    <MudPaper Elevation="6" Class="pa-6 login-paper">
+        <MudStack Spacing="1" Class="mb-4">
+            <MudText Typo="Typo.h5" Class="login-title">Bem-vindo ao MyFinance</MudText>
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Controle suas finanças com segurança.</MudText>
+        </MudStack>
+
+        <MudTextField @bind-Value="_username" Label="Usuário" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField @bind-Value="_password" Label="Senha" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-3" />
 
         <MudStack Spacing="2" Class="mt-4">
             <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
@@ -42,6 +47,14 @@
     {
         _biometricExpirationMinutes = TokenService.GetBiometricExpirationMinutes();
         await RefreshBiometricStateAsync();
+
+        var uri = new Uri(Navigation.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("reason", out var reason) && reason.ToString() == "reauth")
+        {
+            _message = "Sessão protegida: confirme biometria/facial para continuar.";
+            _severity = Severity.Info;
+        }
     }
 
     private async Task RefreshBiometricStateAsync()
@@ -67,14 +80,33 @@
 
         await TokenService.SaveTokenAsync(token);
 
-        if (await BiometricAuthService.IsAvailableAsync())
+        if (await BiometricAuthService.IsAvailableAsync() && !TokenService.HasRequestedBiometricPermission())
         {
-            TokenService.EnableBiometricLogin();
-            _message = "Login efetuado. Biometria ativada para próximos acessos.";
-            _severity = Severity.Success;
+            var useBiometric = await RequestBiometricPermissionAsync();
+            if (useBiometric)
+            {
+                TokenService.EnableBiometricLogin();
+                _message = "Biometria/facial ativada com sucesso.";
+                _severity = Severity.Success;
+            }
+            else
+            {
+                TokenService.MarkBiometricPermissionRequested();
+            }
         }
 
         Navigation.NavigateTo("/");
+    }
+
+    private async Task<bool> RequestBiometricPermissionAsync()
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Ativar segurança biométrica",
+            "Deseja ativar biometria/reconhecimento facial para proteger seu acesso?",
+            yesText: "Ativar",
+            noText: "Agora não");
+
+        return result == true;
     }
 
     private async Task DoBiometricLogin()
