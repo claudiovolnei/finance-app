@@ -48,13 +48,41 @@
         _biometricExpirationMinutes = TokenService.GetBiometricExpirationMinutes();
         await RefreshBiometricStateAsync();
 
-        var uri = new Uri(Navigation.Uri);
-        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
-        if (query.TryGetValue("reason", out var reason) && reason.ToString() == "reauth")
+        var reason = GetQueryValue("reason");
+        if (string.Equals(reason, "reauth", StringComparison.OrdinalIgnoreCase))
         {
             _message = "Sessão protegida: confirme biometria/facial para continuar.";
             _severity = Severity.Info;
         }
+    }
+
+
+    private string? GetQueryValue(string key)
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = uri.Query;
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        var querySpan = query.AsSpan();
+        if (!querySpan.IsEmpty && querySpan[0] == '?')
+            querySpan = querySpan[1..];
+
+        foreach (var part in querySpan.ToString().Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var splitIndex = part.IndexOf('=');
+            var currentKey = splitIndex >= 0 ? part[..splitIndex] : part;
+            if (!string.Equals(Uri.UnescapeDataString(currentKey), key, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (splitIndex < 0 || splitIndex == part.Length - 1)
+                return string.Empty;
+
+            var value = part[(splitIndex + 1)..].Replace("+", " ");
+            return Uri.UnescapeDataString(value);
+        }
+
+        return null;
     }
 
     private async Task RefreshBiometricStateAsync()
