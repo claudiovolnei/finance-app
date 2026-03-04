@@ -1,7 +1,8 @@
-﻿using Android.App;
+using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using AndroidX.Core.View;
+using Plugin.Fingerprint;
 
 namespace Finance.Mobile;
 
@@ -11,6 +12,9 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+
+        // Required by Plugin.Fingerprint on Android so it can display the biometric prompt.
+        CrossFingerprint.SetCurrentActivityResolver(() => this);
 
         if (Window is not null)
         {
