@@ -89,6 +89,12 @@ public class TokenService
 
     public int GetBiometricExpirationMinutes() => BIOMETRIC_EXPIRATION_MINUTES;
 
+
+    public void ForceBiometricReauthentication()
+    {
+        Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
+    }
+
     // Decode JWT token (no validation) and return the 'unique name' or Name claim if present
     public async Task<string?> GetUsernameAsync()
     {

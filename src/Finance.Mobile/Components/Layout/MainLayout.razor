@@ -212,6 +212,17 @@
     private void GoToProfile() => Navigation.NavigateTo("/profile");
     private async void Logout()
     {
+        if (TokenService.IsBiometricLoginEnabled())
+        {
+            TokenService.ForceBiometricReauthentication();
+            _isAuthenticated = false;
+            _name = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
+            Navigation.NavigateTo("/login?reason=locked", forceLoad: true);
+            return;
+        }
+
         await TokenService.RemoveTokenAsync();
         _isAuthenticated = false;
         _name = null;

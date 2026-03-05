@@ -54,6 +54,11 @@
             _message = "Sessão protegida: confirme biometria/facial para continuar.";
             _severity = Severity.Info;
         }
+        else if (string.Equals(reason, "locked", StringComparison.OrdinalIgnoreCase))
+        {
+            _message = "Sessão bloqueada. Entre com biometria/facial para continuar.";
+            _severity = Severity.Info;
+        }
     }
 
 
