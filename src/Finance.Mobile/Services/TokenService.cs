@@ -5,7 +5,8 @@ public class TokenService
     private const string TOKEN_KEY = "finance_mobile_token";
     private const string BIOMETRIC_ENABLED_KEY = "finance_mobile_biometric_enabled";
     private const string BIOMETRIC_LAST_AUTH_UTC_KEY = "finance_mobile_biometric_last_auth_utc";
-    private const int BIOMETRIC_EXPIRATION_MINUTES = 15;
+    private const string BIOMETRIC_PERMISSION_REQUESTED_KEY = "finance_mobile_biometric_permission_requested";
+    private const int BIOMETRIC_EXPIRATION_MINUTES = 10;
 
     public async Task SaveTokenAsync(string token)
     {
@@ -53,6 +54,7 @@ public class TokenService
     public void EnableBiometricLogin()
     {
         Preferences.Set(BIOMETRIC_ENABLED_KEY, true);
+        Preferences.Set(BIOMETRIC_PERMISSION_REQUESTED_KEY, true);
         MarkBiometricAuthentication();
     }
 
@@ -61,6 +63,10 @@ public class TokenService
         Preferences.Remove(BIOMETRIC_ENABLED_KEY);
         Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
     }
+
+    public bool HasRequestedBiometricPermission() => Preferences.Get(BIOMETRIC_PERMISSION_REQUESTED_KEY, false);
+
+    public void MarkBiometricPermissionRequested() => Preferences.Set(BIOMETRIC_PERMISSION_REQUESTED_KEY, true);
 
     public bool IsBiometricLoginEnabled() => Preferences.Get(BIOMETRIC_ENABLED_KEY, false);
 
@@ -82,6 +88,12 @@ public class TokenService
     }
 
     public int GetBiometricExpirationMinutes() => BIOMETRIC_EXPIRATION_MINUTES;
+
+
+    public void ForceBiometricReauthentication()
+    {
+        Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
+    }
 
     // Decode JWT token (no validation) and return the 'unique name' or Name claim if present
     public async Task<string?> GetUsernameAsync()
