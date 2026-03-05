@@ -12,8 +12,22 @@
             <MudText Typo="Typo.body2" Class="mud-text-secondary">Controle suas finanças com segurança.</MudText>
         </MudStack>
 
-        <MudTextField T="string" Value="@_username" ValueChanged="@OnUsernameChanged" Immediate="true" Label="Usuário" Variant="Variant.Outlined" Class="mb-3" />
-        <MudTextField @bind-Value="_password" Label="Senha" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-3" />
+        <MudTextField T="string"
+                      Value="@_username"
+                      ValueChanged="@OnUsernameChanged"
+                      Immediate="true"
+                      Label="Usuário"
+                      Variant="Variant.Outlined"
+                      Required="true"
+                      Error="@(!string.IsNullOrWhiteSpace(_usernameError))"
+                      ErrorText="@_usernameError"
+                      Class="mb-3" />
+        <MudTextField @bind-Value="_password"
+                      Label="Senha"
+                      Variant="Variant.Outlined"
+                      InputType="InputType.Password"
+                      @onfocusin="OnPasswordFieldFocused"
+                      Class="mb-3" />
 
         <MudStack Spacing="2" Class="mt-4">
             <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
@@ -42,8 +56,9 @@
     private Severity _severity = Severity.Info;
     private bool _showBiometricButton;
     private int _biometricExpirationMinutes;
-    private bool _isAutoBiometricInProgress;
-    private string? _lastAutoPromptedUsername;
+    private bool _isBiometricPromptInProgress;
+    private bool _hasPromptedBiometricByPasswordFocus;
+    private string? _usernameError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,44 +117,49 @@
     }
 
 
-    private async Task OnUsernameChanged(string username)
+    private Task OnUsernameChanged(string username)
     {
-        _username = username;
+        _username = username.Trim();
+        _usernameError = ValidateUsername(_username);
+        _hasPromptedBiometricByPasswordFocus = false;
+        return Task.CompletedTask;
+    }
 
-        if (_isAutoBiometricInProgress)
+    private async Task OnPasswordFieldFocused()
+    {
+        if (_hasPromptedBiometricByPasswordFocus || _isBiometricPromptInProgress)
             return;
 
-        if (!TokenService.MatchesSavedUsername(_username))
+        if (!string.IsNullOrWhiteSpace(ValidateUsername(_username)) || !TokenService.MatchesSavedUsername(_username))
             return;
 
-        if (string.Equals(_lastAutoPromptedUsername, _username, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        var token = await TokenService.GetTokenAsync();
-        if (string.IsNullOrWhiteSpace(token))
-            return;
-
-        if (!TokenService.IsBiometricLoginEnabled())
-            return;
-
-        if (!await BiometricAuthService.IsAvailableAsync())
-            return;
-
-        _lastAutoPromptedUsername = _username;
-        _isAutoBiometricInProgress = true;
+        _isBiometricPromptInProgress = true;
         try
         {
-            await DoBiometricLogin();
+            if (await CanUseBiometricLoginAsync())
+            {
+                _hasPromptedBiometricByPasswordFocus = true;
+                await DoBiometricLogin();
+            }
         }
         finally
         {
-            _isAutoBiometricInProgress = false;
+            _isBiometricPromptInProgress = false;
         }
     }
 
     private async Task DoLogin()
     {
         _message = string.Empty;
+        _username = _username.Trim();
+        _usernameError = ValidateUsername(_username);
+
+        if (!string.IsNullOrWhiteSpace(_usernameError))
+        {
+            _message = _usernameError;
+            _severity = Severity.Warning;
+            return;
+        }
 
         var token = await Api.LoginAsync(_username, _password);
         if (string.IsNullOrEmpty(token))
@@ -184,6 +204,16 @@
     private async Task DoBiometricLogin()
     {
         _message = string.Empty;
+
+        _username = _username.Trim();
+        _usernameError = ValidateUsername(_username);
+        if (!string.IsNullOrWhiteSpace(_usernameError))
+        {
+            _message = _usernameError;
+            _severity = Severity.Warning;
+            return;
+        }
+
         var token = await TokenService.GetTokenAsync();
         if (string.IsNullOrEmpty(token))
         {
@@ -203,5 +233,27 @@
 
         TokenService.MarkBiometricAuthentication();
         Navigation.NavigateTo("/");
+    }
+
+    private async Task<bool> CanUseBiometricLoginAsync()
+    {
+        var token = await TokenService.GetTokenAsync();
+        return !string.IsNullOrWhiteSpace(token)
+            && TokenService.IsBiometricLoginEnabled()
+            && await BiometricAuthService.IsAvailableAsync();
+    }
+
+    private static string? ValidateUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return "Informe o usuário.";
+
+        if (username.Length < 3)
+            return "O usuário deve ter pelo menos 3 caracteres.";
+
+        if (username.Any(char.IsWhiteSpace))
+            return "O usuário não pode conter espaços.";
+
+        return null;
     }
 }
