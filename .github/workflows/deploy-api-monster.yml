@@ -2,8 +2,8 @@ name: Deploy Finance API (Monster WebDeploy)
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v.*'  # troque se sua branch for outra
     paths:
       - 'src/Finance.Api/**'
       - 'src/Finance.Application/**'
