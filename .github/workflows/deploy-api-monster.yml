@@ -1,15 +1,9 @@
-name: Deploy Finance API (Monster WebDeploy)
+name: Deploy Finance API (MonsterASP)
 
 on:
   push:
     tags:
-      - 'v.*'  # troque se sua branch for outra
-    paths:
-      - 'src/Finance.Api/**'
-      - 'src/Finance.Application/**'
-      - 'src/Finance.Domain/**'
-      - 'src/Finance.Infrastructure/**'
-      - '.github/workflows/deploy-api-monster.yml'
+      - "v*"
   workflow_dispatch:
 
 jobs:
@@ -28,19 +22,13 @@ jobs:
       - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Publish API
-        run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish/api
+      - name: Build
+        run: dotnet build src/Finance.Api/Finance.Api.csproj --configuration Release --no-restore
 
-      - name: Build WebDeploy package
-        shell: pwsh
-        run: |
-          Compress-Archive -Path publish/api/* -DestinationPath publish/Finance.Api.zip -Force
+      - name: Publish
+        run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish
 
-      - name: Install Web Deploy
-        shell: pwsh
-        run: choco install webdeploy -y
-
-      - name: Deploy via MSDeploy
+      - name: Deploy to Monster
         shell: pwsh
         env:
           WEBDEPLOY_PUBLISH_URL: ${{ secrets.WEBDEPLOY_PUBLISH_URL }}
@@ -48,11 +36,13 @@ jobs:
           WEBDEPLOY_USERNAME: ${{ secrets.WEBDEPLOY_USERNAME }}
           WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
-          $msdeployPath = Get-ChildItem 'C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe' | Select-Object -ExpandProperty FullName
+          $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
 
-          & $msdeployPath `
+          $computerName = "https://$env:WEBDEPLOY_PUBLISH_URL`:8172/msdeploy.axd?site=$env:WEBDEPLOY_SITE"
+
+          & $msdeploy `
             -verb:sync `
-            -source:package='publish/Finance.Api.zip' `
-            -dest:auto,computerName="https://$env:WEBDEPLOY_PUBLISH_URL/msdeploy.axd?site=$env:WEBDEPLOY_SITE",userName="$env:WEBDEPLOY_USERNAME",password="$env:WEBDEPLOY_PASSWORD",authType='Basic' `
+            -source:contentPath="publish" `
+            -dest:contentPath="$env:WEBDEPLOY_SITE",computerName="$computerName",userName="$env:WEBDEPLOY_USERNAME",password="$env:WEBDEPLOY_PASSWORD",authType="Basic" `
             -allowUntrusted `
             -enableRule:AppOffline
