@@ -1,0 +1,58 @@
+name: Deploy Finance API (Monster WebDeploy)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/Finance.Api/**'
+      - 'src/Finance.Application/**'
+      - 'src/Finance.Domain/**'
+      - 'src/Finance.Infrastructure/**'
+      - '.github/workflows/deploy-api-monster.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore src/Finance.Api/Finance.Api.csproj
+
+      - name: Publish API
+        run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish/api
+
+      - name: Build WebDeploy package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish/api/* -DestinationPath publish/Finance.Api.zip -Force
+
+      - name: Install Web Deploy
+        shell: pwsh
+        run: choco install webdeploy -y
+
+      - name: Deploy via MSDeploy
+        shell: pwsh
+        env:
+          WEBDEPLOY_PUBLISH_URL: ${{ secrets.WEBDEPLOY_PUBLISH_URL }}
+          WEBDEPLOY_SITE: ${{ secrets.WEBDEPLOY_SITE }}
+          WEBDEPLOY_USERNAME: ${{ secrets.WEBDEPLOY_USERNAME }}
+          WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
+        run: |
+          $msdeployPath = Get-ChildItem 'C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe' | Select-Object -ExpandProperty FullName
+
+          & $msdeployPath `
+            -verb:sync `
+            -source:package='publish/Finance.Api.zip' `
+            -dest:auto,computerName="https://$env:WEBDEPLOY_PUBLISH_URL/msdeploy.axd?site=$env:WEBDEPLOY_SITE",userName="$env:WEBDEPLOY_USERNAME",password="$env:WEBDEPLOY_PASSWORD",authType='Basic' `
+            -allowUntrusted `
+            -enableRule:AppOffline
