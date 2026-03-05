@@ -11,7 +11,8 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -19,16 +20,16 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Build
+      - name: Build project
         run: dotnet build src/Finance.Api/Finance.Api.csproj --configuration Release --no-restore
 
-      - name: Publish
+      - name: Publish project
         run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish
 
-      - name: Deploy to Monster
+      - name: Deploy to MonsterASP via WebDeploy
         shell: pwsh
         env:
           WEBDEPLOY_PUBLISH_URL: ${{ secrets.WEBDEPLOY_PUBLISH_URL }}
@@ -36,13 +37,30 @@ jobs:
           WEBDEPLOY_USERNAME: ${{ secrets.WEBDEPLOY_USERNAME }}
           WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
+
+          Write-Host "Starting WebDeploy..."
+
           $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
 
+          if (!(Test-Path $msdeploy)) {
+              Write-Error "msdeploy not found!"
+              exit 1
+          }
+
           $computerName = "https://$env:WEBDEPLOY_PUBLISH_URL`:8172/msdeploy.axd?site=$env:WEBDEPLOY_SITE"
+
+          $dest = "contentPath=$env:WEBDEPLOY_SITE,computerName=$computerName,userName=$env:WEBDEPLOY_USERNAME,password=$env:WEBDEPLOY_PASSWORD,authType=Basic"
 
           & $msdeploy `
             -verb:sync `
             -source:contentPath="publish" `
-            -dest:contentPath="$env:WEBDEPLOY_SITE",computerName="$computerName",userName="$env:WEBDEPLOY_USERNAME",password="$env:WEBDEPLOY_PASSWORD",authType="Basic" `
+            -dest:$dest `
             -allowUntrusted `
             -enableRule:AppOffline
+
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "Deploy failed"
+              exit $LASTEXITCODE
+          }
+
+          Write-Host "Deploy finished successfully!"
