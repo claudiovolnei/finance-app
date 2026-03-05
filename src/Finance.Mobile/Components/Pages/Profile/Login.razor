@@ -12,7 +12,7 @@
             <MudText Typo="Typo.body2" Class="mud-text-secondary">Controle suas finanças com segurança.</MudText>
         </MudStack>
 
-        <MudTextField @bind-Value="_username" Label="Usuário" Variant="Variant.Outlined" Class="mb-3" />
+        <MudTextField Value="@_username" ValueChanged="OnUsernameChanged" Immediate="true" Label="Usuário" Variant="Variant.Outlined" Class="mb-3" />
         <MudTextField @bind-Value="_password" Label="Senha" Variant="Variant.Outlined" InputType="InputType.Password" Class="mb-3" />
 
         <MudStack Spacing="2" Class="mt-4">
@@ -42,6 +42,8 @@
     private Severity _severity = Severity.Info;
     private bool _showBiometricButton;
     private int _biometricExpirationMinutes;
+    private bool _isAutoBiometricInProgress;
+    private string? _lastAutoPromptedUsername;
 
     protected override async Task OnInitializedAsync()
     {
@@ -99,6 +101,42 @@
             && await BiometricAuthService.IsAvailableAsync();
     }
 
+
+    private async Task OnUsernameChanged(string username)
+    {
+        _username = username;
+
+        if (_isAutoBiometricInProgress)
+            return;
+
+        if (!TokenService.MatchesSavedUsername(_username))
+            return;
+
+        if (string.Equals(_lastAutoPromptedUsername, _username, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var token = await TokenService.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+            return;
+
+        if (!TokenService.IsBiometricLoginEnabled())
+            return;
+
+        if (!await BiometricAuthService.IsAvailableAsync())
+            return;
+
+        _lastAutoPromptedUsername = _username;
+        _isAutoBiometricInProgress = true;
+        try
+        {
+            await DoBiometricLogin();
+        }
+        finally
+        {
+            _isAutoBiometricInProgress = false;
+        }
+    }
+
     private async Task DoLogin()
     {
         _message = string.Empty;
@@ -112,6 +150,7 @@
         }
 
         await TokenService.SaveTokenAsync(token);
+        TokenService.SaveUsername(_username);
 
         if (await BiometricAuthService.IsAvailableAsync() && !TokenService.HasRequestedBiometricPermission())
         {

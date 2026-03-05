@@ -6,6 +6,7 @@ public class TokenService
     private const string BIOMETRIC_ENABLED_KEY = "finance_mobile_biometric_enabled";
     private const string BIOMETRIC_LAST_AUTH_UTC_KEY = "finance_mobile_biometric_last_auth_utc";
     private const string BIOMETRIC_PERMISSION_REQUESTED_KEY = "finance_mobile_biometric_permission_requested";
+    private const string SAVED_USERNAME_KEY = "finance_mobile_saved_username";
     private const int BIOMETRIC_EXPIRATION_MINUTES = 10;
 
     public async Task SaveTokenAsync(string token)
@@ -48,6 +49,7 @@ public class TokenService
         }
 
         DisableBiometricLogin();
+        RemoveSavedUsername();
         await Task.CompletedTask;
     }
 
@@ -65,6 +67,31 @@ public class TokenService
     }
 
     public bool HasRequestedBiometricPermission() => Preferences.Get(BIOMETRIC_PERMISSION_REQUESTED_KEY, false);
+
+
+    public void SaveUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return;
+
+        Preferences.Set(SAVED_USERNAME_KEY, username.Trim());
+    }
+
+    public string? GetSavedUsername() => Preferences.Get(SAVED_USERNAME_KEY, null as string);
+
+    public void RemoveSavedUsername() => Preferences.Remove(SAVED_USERNAME_KEY);
+
+    public bool MatchesSavedUsername(string? username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return false;
+
+        var savedUsername = GetSavedUsername();
+        if (string.IsNullOrWhiteSpace(savedUsername))
+            return false;
+
+        return string.Equals(savedUsername.Trim(), username.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
 
     public void MarkBiometricPermissionRequested() => Preferences.Set(BIOMETRIC_PERMISSION_REQUESTED_KEY, true);
 
