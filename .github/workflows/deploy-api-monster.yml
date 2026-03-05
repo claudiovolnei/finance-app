@@ -12,7 +12,7 @@ jobs:
 
     steps:
 
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup .NET
@@ -24,38 +24,13 @@ jobs:
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
 
       - name: Build
-        run: dotnet build src/Finance.Api/Finance.Api.csproj --configuration Release --no-restore
+        run: dotnet build src/Finance.Api/Finance.Api.csproj -c Release --no-restore
 
-      - name: Publish
-        run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish
-
-      - name: Deploy to MonsterASP
-        shell: pwsh
+      - name: Deploy using publish profile
         env:
-          WEBDEPLOY_PUBLISH_URL: ${{ secrets.WEBDEPLOY_PUBLISH_URL }}
-          WEBDEPLOY_SITE: ${{ secrets.WEBDEPLOY_SITE }}
-          WEBDEPLOY_USERNAME: ${{ secrets.WEBDEPLOY_USERNAME }}
           WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
-
-          Write-Host "Starting deployment..."
-
-          $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
-
-          if (!(Test-Path $msdeploy)) {
-              Write-Error "msdeploy not found"
-              exit 1
-          }
-
-          $publishPath = (Resolve-Path "publish").Path
-
-          $computerName = "https://$env:WEBDEPLOY_PUBLISH_URL`:8172/msdeploy.axd"
-
-          $dest = "iisApp=$env:WEBDEPLOY_SITE,computerName=$computerName,userName=$env:WEBDEPLOY_USERNAME,password=$env:WEBDEPLOY_PASSWORD,authType=Basic"
-
-          Write-Host "Publish folder: $publishPath"
-          Write-Host "Deploying to: $env:WEBDEPLOY_SITE"
-
-          & $msdeploy `
-            -verb:sync `
-            -source
+          dotnet publish src/Finance.Api/Finance.Api.csproj `
+            -c Release `
+            /p:PublishProfile=site55699-WebDeploy `
+            /p:Password=$env:WEBDEPLOY_PASSWORD
