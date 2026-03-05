@@ -94,9 +94,11 @@
     private MudTheme _theme = new();
     private string? _name;
     private bool _isAuthenticated;
+    private bool _isBiometricPromptInProgress;
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public Finance.Mobile.Services.FinanceApiClient ApiClient { get; set; } = default!;
+    [Inject] public Finance.Mobile.Services.BiometricAuthService BiometricAuthService { get; set; } = default!;
     [Inject] public Finance.Mobile.Services.AccountSelectionState AccountState { get; set; } = default!;
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
@@ -130,6 +132,14 @@
             _name = await TokenService.GetUsernameAsync();
             ApiClient.SetBearerToken(token!);
 
+            var currentRoute = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+            var requiresBiometric = TokenService.RequiresBiometricAuthentication();
+            if (requiresBiometric && currentRoute != "login" && !_isBiometricPromptInProgress)
+            {
+                await RequestBiometricUnlockAsync();
+                return;
+            }
+
             if (!wasAuthenticated || !AccountState.Accounts.Any())
             {
                 try
@@ -148,6 +158,33 @@
             _name = null;
             AccountState.SetAccounts(Array.Empty<Account>());
             AccountState.SetSelectedAccount(null);
+        }
+    }
+
+    private async Task RequestBiometricUnlockAsync()
+    {
+        _isBiometricPromptInProgress = true;
+        try
+        {
+            var isAvailable = await BiometricAuthService.IsAvailableAsync();
+            if (!isAvailable)
+            {
+                Navigation.NavigateTo("/login?reason=reauth", forceLoad: false);
+                return;
+            }
+
+            var authenticated = await BiometricAuthService.AuthenticateAsync("Confirme sua identidade para continuar");
+            if (!authenticated)
+            {
+                Navigation.NavigateTo("/login?reason=reauth", forceLoad: false);
+                return;
+            }
+
+            TokenService.MarkBiometricAuthentication();
+        }
+        finally
+        {
+            _isBiometricPromptInProgress = false;
         }
     }
 
@@ -175,6 +212,17 @@
     private void GoToProfile() => Navigation.NavigateTo("/profile");
     private async void Logout()
     {
+        if (TokenService.IsBiometricLoginEnabled())
+        {
+            TokenService.ForceBiometricReauthentication();
+            _isAuthenticated = false;
+            _name = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
+            Navigation.NavigateTo("/login?reason=locked", forceLoad: true);
+            return;
+        }
+
         await TokenService.RemoveTokenAsync();
         _isAuthenticated = false;
         _name = null;
