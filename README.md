@@ -170,3 +170,40 @@ dotnet build
 ## Licença
 
 Uso conforme definido no repositório do projeto.
+
+## Deploy da API no Monster (WebDeploy + GitHub Actions)
+
+Foi adicionado o workflow `.github/workflows/deploy-api-monster.yml` para publicar a API no servidor Monster via **MSDeploy/WebDeploy**.
+
+### Publish profile adicionado
+
+Arquivo: `src/Finance.Api/Properties/PublishProfiles/site55699-WebDeploy.pubxml`
+
+Esse profile contém:
+- `publishMethod=MSDeploy`
+- `publishUrl=site55699.siteasp.net`
+- `msdeploySite=site55699`
+- `destinationAppUrl=http://my-finance.runasp.net/`
+
+### Secrets que devem ser criados no GitHub
+
+No repositório, vá em **Settings > Secrets and variables > Actions > New repository secret** e crie:
+
+- `WEBDEPLOY_PUBLISH_URL` = `site55699.siteasp.net`
+- `WEBDEPLOY_SITE` = `site55699`
+- `WEBDEPLOY_USERNAME` = `site55699`
+- `WEBDEPLOY_PASSWORD` = `w_3C+Wg72?Nd`
+
+Opcionalmente, com GitHub CLI:
+
+```bash
+gh secret set WEBDEPLOY_PUBLISH_URL --body "site55699.siteasp.net"
+gh secret set WEBDEPLOY_SITE --body "site55699"
+gh secret set WEBDEPLOY_USERNAME --body "site55699"
+gh secret set WEBDEPLOY_PASSWORD --body "w_3C+Wg72?Nd"
+```
+
+### Como disparar o deploy
+
+- Automático em push na branch `main` quando houver alteração em projetos da API.
+- Manualmente pela aba **Actions** com `workflow_dispatch`.
