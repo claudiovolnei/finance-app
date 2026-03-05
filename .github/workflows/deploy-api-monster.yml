@@ -20,16 +20,16 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Build project
+      - name: Build
         run: dotnet build src/Finance.Api/Finance.Api.csproj --configuration Release --no-restore
 
-      - name: Publish project
+      - name: Publish
         run: dotnet publish src/Finance.Api/Finance.Api.csproj -c Release -o publish
 
-      - name: Deploy to MonsterASP via WebDeploy
+      - name: Deploy to MonsterASP
         shell: pwsh
         env:
           WEBDEPLOY_PUBLISH_URL: ${{ secrets.WEBDEPLOY_PUBLISH_URL }}
@@ -38,29 +38,24 @@ jobs:
           WEBDEPLOY_PASSWORD: ${{ secrets.WEBDEPLOY_PASSWORD }}
         run: |
 
-          Write-Host "Starting WebDeploy..."
+          Write-Host "Starting deployment..."
 
           $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
 
           if (!(Test-Path $msdeploy)) {
-              Write-Error "msdeploy not found!"
+              Write-Error "msdeploy not found"
               exit 1
           }
 
-          $computerName = "https://$env:WEBDEPLOY_PUBLISH_URL`:8172/msdeploy.axd?site=$env:WEBDEPLOY_SITE"
+          $publishPath = (Resolve-Path "publish").Path
 
-          $dest = "contentPath=$env:WEBDEPLOY_SITE,computerName=$computerName,userName=$env:WEBDEPLOY_USERNAME,password=$env:WEBDEPLOY_PASSWORD,authType=Basic"
+          $computerName = "https://$env:WEBDEPLOY_PUBLISH_URL`:8172/msdeploy.axd"
+
+          $dest = "iisApp=$env:WEBDEPLOY_SITE,computerName=$computerName,userName=$env:WEBDEPLOY_USERNAME,password=$env:WEBDEPLOY_PASSWORD,authType=Basic"
+
+          Write-Host "Publish folder: $publishPath"
+          Write-Host "Deploying to: $env:WEBDEPLOY_SITE"
 
           & $msdeploy `
             -verb:sync `
-            -source:contentPath="publish" `
-            -dest:$dest `
-            -allowUntrusted `
-            -enableRule:AppOffline
-
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "Deploy failed"
-              exit $LASTEXITCODE
-          }
-
-          Write-Host "Deploy finished successfully!"
+            -source
