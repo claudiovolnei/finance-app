@@ -115,4 +115,3 @@ $RECYCLE.BIN/
 
 #Plataforms
 *.Platforms
-/src/Finance.Api/appsettings.json
