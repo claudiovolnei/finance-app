@@ -82,8 +82,10 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
     {
-        var key = builder.Configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException("Jwt:Key not configured");
+        if(String.IsNullOrEmpty(builder.Configuration["Jwt:Key"]))
+             throw new InvalidOperationException("Jwt:Key not configured");
+
+        var key = builder.Configuration["Jwt:Key"];
         var issuer = builder.Configuration["Jwt:Issuer"] ?? "FinanceApi";
         var audience = builder.Configuration["Jwt:Audience"] ?? "FinanceMobile";
         var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(key));
