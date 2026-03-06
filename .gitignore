@@ -115,3 +115,5 @@ $RECYCLE.BIN/
 
 #Plataforms
 *.Platforms
+
+!src/Finance.Api/Properties/PublishProfiles/site55699-WebDeploy.pubxml
