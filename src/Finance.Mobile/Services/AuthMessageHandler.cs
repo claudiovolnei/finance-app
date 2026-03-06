@@ -1,15 +1,16 @@
 using System.Net;
-using Microsoft.AspNetCore.Components;
 
 namespace Finance.Mobile.Services;
 
 public class AuthMessageHandler : DelegatingHandler
 {
     private readonly TokenService _tokenService;
+    private readonly BiometricAuthService _biometricAuthService;
 
-    public AuthMessageHandler(TokenService tokenService)
+    public AuthMessageHandler(TokenService tokenService, BiometricAuthService biometricAuthService)
     {
         _tokenService = tokenService;
+        _biometricAuthService = biometricAuthService;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -17,6 +18,21 @@ public class AuthMessageHandler : DelegatingHandler
         var token = await _tokenService.GetTokenAsync();
         if (!string.IsNullOrEmpty(token))
         {
+            if (_tokenService.RequiresBiometricAuthentication())
+            {
+                var authenticated = await _biometricAuthService.AuthenticateAsync("Confirme sua biometria para continuar");
+                if (!authenticated)
+                {
+                    _tokenService.ForceBiometricReauthentication();
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                    {
+                        RequestMessage = request
+                    };
+                }
+
+                _tokenService.MarkBiometricAuthentication();
+            }
+
             // ensure single Authorization header
             request.Headers.Remove("Authorization");
             request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);

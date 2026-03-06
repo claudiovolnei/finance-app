@@ -115,10 +115,21 @@
     private async Task RefreshAuthenticationStateAsync()
     {
         var token = await TokenService.GetTokenAsync();
+        var hasToken = !string.IsNullOrWhiteSpace(token);
+        var isBiometricLocked = hasToken && TokenService.RequiresBiometricAuthentication();
         var wasAuthenticated = _isAuthenticated;
-        _isAuthenticated = !string.IsNullOrWhiteSpace(token);
+        _isAuthenticated = hasToken && !isBiometricLocked;
 
         var uri = Navigation.ToBaseRelativePath(Navigation.Uri).TrimEnd('/');
+        if (!_isAuthenticated && isBiometricLocked && uri != "login")
+        {
+            _name = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
+            Navigation.NavigateTo("/login?reason=locked");
+            return;
+        }
+
         if (!_isAuthenticated && uri != "login" && uri != "auth/register")
         {
             Navigation.NavigateTo("/login");
@@ -175,6 +186,17 @@
     private void GoToProfile() => Navigation.NavigateTo("/profile");
     private async void Logout()
     {
+        if (TokenService.IsBiometricLoginEnabled())
+        {
+            TokenService.ForceBiometricReauthentication();
+            _isAuthenticated = false;
+            _name = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
+            Navigation.NavigateTo("/login?reason=locked", forceLoad: true);
+            return;
+        }
+
         await TokenService.RemoveTokenAsync();
         _isAuthenticated = false;
         _name = null;
