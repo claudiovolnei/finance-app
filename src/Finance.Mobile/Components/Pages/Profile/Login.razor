@@ -12,35 +12,78 @@
             <MudText Typo="Typo.body2" Class="mud-text-secondary">Controle suas finanças com segurança.</MudText>
         </MudStack>
 
-        <MudTextField T="string"
-                      Value="@_username"
-                      ValueChanged="@OnUsernameChanged"
-                      Immediate="true"
-                      Label="Usuário"
-                      Variant="Variant.Outlined"
-                      Required="true"
-                      Error="@(!string.IsNullOrWhiteSpace(_usernameError))"
-                      ErrorText="@_usernameError"
-                      Class="mb-3" />
-        <MudTextField @bind-Value="_password"
-                      Label="Senha"
-                      Variant="Variant.Outlined"
-                      InputType="InputType.Password"
-                      @onfocusin="OnPasswordFieldFocused"
-                      Class="mb-3" />
+        @if (_isBiometricPreferredMode)
+        {
+            <MudStack Spacing="2">
+                <MudTextField T="string"
+                              Value="@_username"
+                              Label="Usuário"
+                              Variant="Variant.Outlined"
+                              Disabled="true" />
 
-        <MudStack Spacing="2" Class="mt-4">
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
-            @if (_showBiometricButton)
-            {
-                <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="DoBiometricLogin" Class="px-6">
+                <MudTextField T="string"
+                              Value="@("Biometria")"
+                              Label="Senha"
+                              Variant="Variant.Outlined"
+                              Disabled="true"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Fingerprint" />
+
+                <MudButton Color="Color.Secondary" Variant="Variant.Filled" OnClick="DoBiometricLogin" Class="px-6">
                     Entrar com biometria
                 </MudButton>
+
+                <MudDivider />
+
+                <MudButton Color="Color.Primary" Variant="Variant.Outlined" OnClick="UsePasswordForCurrentUser">
+                    Entrar com senha deste usuário
+                </MudButton>
+                <MudButton Color="Color.Default" Variant="Variant.Text" OnClick="UseAnotherUser">
+                    Usar outro usuário
+                </MudButton>
+
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                    A biometria será solicitada novamente após @_biometricExpirationMinutes minutos.
+                    Após @_biometricExpirationMinutes minutos sem autenticação, a biometria será solicitada novamente.
                 </MudText>
-            }
-        </MudStack>
+            </MudStack>
+        }
+        else
+        {
+            <MudTextField T="string"
+                          Value="@_username"
+                          ValueChanged="@OnUsernameChanged"
+                          Immediate="true"
+                          Label="Usuário"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          Error="@(!string.IsNullOrWhiteSpace(_usernameError))"
+                          ErrorText="@_usernameError"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="_password"
+                          Label="Senha"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Class="mb-3" />
+
+            <MudStack Spacing="2" Class="mt-4">
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
+
+                @if (_showBiometricButton)
+                {
+                    <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="DoBiometricLogin" Class="px-6">
+                        Entrar com biometria
+                    </MudButton>
+                }
+
+                @if (_canReturnToBiometricMode)
+                {
+                    <MudButton Color="Color.Default" Variant="Variant.Text" OnClick="BackToBiometricMode" Class="px-6">
+                        Voltar para login com biometria
+                    </MudButton>
+                }
+            </MudStack>
+        }
 
         @if (!string.IsNullOrWhiteSpace(_message))
         {
@@ -56,9 +99,9 @@
     private Severity _severity = Severity.Info;
     private bool _showBiometricButton;
     private int _biometricExpirationMinutes;
-    private bool _isBiometricPromptInProgress;
-    private bool _hasPromptedBiometricByPasswordFocus;
     private string? _usernameError;
+    private bool _isBiometricPreferredMode;
+    private bool _canReturnToBiometricMode;
 
     protected override async Task OnInitializedAsync()
     {
@@ -77,7 +120,6 @@
             _severity = Severity.Info;
         }
     }
-
 
     private string? GetQueryValue(string key)
     {
@@ -110,42 +152,58 @@
     private async Task RefreshBiometricStateAsync()
     {
         var token = await TokenService.GetTokenAsync();
-        _showBiometricButton =
-            !string.IsNullOrEmpty(token)
-            && TokenService.IsBiometricLoginEnabled()
-            && await BiometricAuthService.IsAvailableAsync();
-    }
+        var savedUsername = TokenService.GetSavedUsername()?.Trim() ?? string.Empty;
+        var biometricAvailable = await BiometricAuthService.IsAvailableAsync();
+        var hasBiometricSession = !string.IsNullOrEmpty(token)
+                                  && TokenService.IsBiometricLoginEnabled()
+                                  && biometricAvailable
+                                  && !string.IsNullOrWhiteSpace(savedUsername);
 
+        _showBiometricButton = hasBiometricSession;
+        _isBiometricPreferredMode = hasBiometricSession;
+        _canReturnToBiometricMode = hasBiometricSession;
+
+        if (_isBiometricPreferredMode)
+        {
+            _username = savedUsername;
+            _password = string.Empty;
+            _usernameError = null;
+        }
+    }
 
     private Task OnUsernameChanged(string username)
     {
         _username = username.Trim();
         _usernameError = ValidateUsername(_username);
-        _hasPromptedBiometricByPasswordFocus = false;
         return Task.CompletedTask;
     }
 
-    private async Task OnPasswordFieldFocused()
+    private void UsePasswordForCurrentUser()
     {
-        if (_hasPromptedBiometricByPasswordFocus || _isBiometricPromptInProgress)
-            return;
+        _isBiometricPreferredMode = false;
+        _password = string.Empty;
+        _message = string.Empty;
+    }
 
-        if (!string.IsNullOrWhiteSpace(ValidateUsername(_username)) || !TokenService.MatchesSavedUsername(_username))
-            return;
+    private void UseAnotherUser()
+    {
+        _isBiometricPreferredMode = false;
+        _username = string.Empty;
+        _password = string.Empty;
+        _usernameError = null;
+        _message = string.Empty;
+    }
 
-        _isBiometricPromptInProgress = true;
-        try
-        {
-            if (await CanUseBiometricLoginAsync())
-            {
-                _hasPromptedBiometricByPasswordFocus = true;
-                await DoBiometricLogin();
-            }
-        }
-        finally
-        {
-            _isBiometricPromptInProgress = false;
-        }
+    private void BackToBiometricMode()
+    {
+        var savedUsername = TokenService.GetSavedUsername();
+        if (!string.IsNullOrWhiteSpace(savedUsername))
+            _username = savedUsername.Trim();
+
+        _password = string.Empty;
+        _usernameError = null;
+        _message = string.Empty;
+        _isBiometricPreferredMode = true;
     }
 
     private async Task DoLogin()
@@ -233,14 +291,6 @@
 
         TokenService.MarkBiometricAuthentication();
         Navigation.NavigateTo("/");
-    }
-
-    private async Task<bool> CanUseBiometricLoginAsync()
-    {
-        var token = await TokenService.GetTokenAsync();
-        return !string.IsNullOrWhiteSpace(token)
-            && TokenService.IsBiometricLoginEnabled()
-            && await BiometricAuthService.IsAvailableAsync();
     }
 
     private static string? ValidateUsername(string username)

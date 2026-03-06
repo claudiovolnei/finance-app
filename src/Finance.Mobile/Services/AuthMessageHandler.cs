@@ -23,7 +23,7 @@ public class AuthMessageHandler : DelegatingHandler
                 var authenticated = await _biometricAuthService.AuthenticateAsync("Confirme sua biometria para continuar");
                 if (!authenticated)
                 {
-                    await _tokenService.RemoveTokenAsync();
+                    _tokenService.ForceBiometricReauthentication();
                     return new HttpResponseMessage(HttpStatusCode.Unauthorized)
                     {
                         RequestMessage = request
