@@ -3,7 +3,7 @@ name: Build Android APK (Internal) on Tag Finance.Mobile
 on:
   push:
     tags:
-      - 'v.*'  # troque se sua branch for outra
+      - 'v*'  # troque se sua branch for outra
 
   workflow_dispatch:  # permite rodar manualmente
 
