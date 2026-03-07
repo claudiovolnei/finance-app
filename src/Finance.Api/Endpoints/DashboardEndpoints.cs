@@ -26,7 +26,7 @@ public static class DashboardEndpoints
             userId = parsed;
 
         var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
-        var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var categories = await categoryRepo.GetByOwnerUserIdAsync(userId);
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
 
         var totalIncome = transactions.Where(t => t.Type == Finance.Domain.Entities.TransactionType.Income).Sum(t => t.Amount);

@@ -158,11 +158,14 @@ public class FinanceApiClient
     }
 
     // ========== CATEGORIES ==========
-    public async Task<List<Category>> GetCategoriesAsync()
+    public async Task<List<Category>> GetCategoriesAsync(int? ownerUserId = null)
     {
-        var resp = await _httpClient.GetAsync(Url("categories"));
+        var endpoint = ownerUserId.HasValue ? $"categories/by-user/{ownerUserId.Value}" : "categories";
+        var resp = await _httpClient.GetAsync(Url(endpoint));
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
+        if (resp.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            throw new Exception("Sem permissão para consultar categorias deste usuário.");
         resp.EnsureSuccessStatusCode();
         var categories = await resp.Content.ReadFromJsonAsync<List<Category>>();
         return categories ?? new List<Category>();
@@ -179,9 +182,9 @@ public class FinanceApiClient
         return await resp.Content.ReadFromJsonAsync<Category>();
     }
 
-    public async Task<Category> CreateCategoryAsync(string name, TransactionType type)
+    public async Task<Category> CreateCategoryAsync(string name, TransactionType type, int? ownerUserId = null)
     {
-        var request = new CreateCategoryRequest(name, type);
+        var request = new CreateCategoryRequest(name, type, ownerUserId);
         var response = await _httpClient.PostAsJsonAsync(Url("categories"), request);
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
@@ -265,7 +268,7 @@ public class FinanceApiClient
         string? Description,
         TransactionType Type);
 
-    private record CreateCategoryRequest(string Name, TransactionType type);
+    private record CreateCategoryRequest(string Name, TransactionType type, int? OwnerUserId);
     private record UpdateCategoryRequest(string Name);
     private record CreateAccountRequest(string Name, decimal InitialBalance);
     private record UpdateAccountRequest(string Name, decimal InitialBalance);
