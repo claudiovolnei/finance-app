@@ -48,14 +48,20 @@ jobs:
         if: steps.migration_changes.outputs.run_migrations == 'true'
         run: dotnet tool install --global dotnet-ef
 
+      - name: Restore projects for migrations
+        if: steps.migration_changes.outputs.run_migrations == 'true'
+        run: |
+          dotnet restore src/Finance.Infrastructure/Finance.Infrastructure.csproj
+          dotnet restore src/Finance.Api/Finance.Api.csproj
+
       - name: Apply migrations
         if: steps.migration_changes.outputs.run_migrations == 'true'
         shell: pwsh
         env:
-          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
+          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION || secrets.FINANCE_DB_CONNETION }}
         run: |
           if (-not $env:FINANCE_DB_CONNECTION) {
-            Write-Host "FINANCE_DB_CONNECTION secret is not configured. Skipping migration update."
+            Write-Host "FINANCE_DB_CONNECTION/FINANCE_DB_CONNETION secret is not configured. Skipping migration update."
             exit 0
           }
 
