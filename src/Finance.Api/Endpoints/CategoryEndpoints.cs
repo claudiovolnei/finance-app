@@ -14,8 +14,14 @@ public static class CategoryEndpoints
 
         group.MapGet("/", GetAllCategories)
             .WithName("GetAllCategories")
-            .WithSummary("Lista todas as categorias")
+            .WithSummary("Lista todas as categorias do usuário autenticado")
             .Produces<List<Finance.Domain.Entities.Category>>();
+
+        group.MapGet("/by-user/{ownerUserId:int}", GetCategoriesByOwnerUser)
+            .WithName("GetCategoriesByOwnerUser")
+            .WithSummary("Lista categorias vinculadas a um usuário")
+            .Produces<List<Finance.Domain.Entities.Category>>()
+            .Produces(403);
 
         group.MapGet("/{id:int}", GetCategoryById)
             .WithName("GetCategoryById")
@@ -51,7 +57,26 @@ public static class CategoryEndpoints
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        var categories = await repository.GetByUserIdAsync(userId);
+        var categories = await repository.GetByOwnerUserIdAsync(userId);
+        return Results.Ok(categories);
+    }
+
+
+    private static async Task<IResult> GetCategoriesByOwnerUser(
+        HttpContext httpContext,
+        int ownerUserId,
+        GetCategoriesByOwnerUserUseCase useCase)
+    {
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        int userId = 0;
+        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
+            userId = parsed;
+
+        // Usuário só pode consultar as próprias categorias
+        if (ownerUserId != userId)
+            return Results.Forbid();
+
+        var categories = await useCase.ExecuteAsync(ownerUserId);
         return Results.Ok(categories);
     }
 
@@ -64,7 +89,7 @@ public static class CategoryEndpoints
         if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
             userId = parsed;
 
-        if (category.UserId != userId) return Results.Forbid();
+        if (category.OwnerUserId != userId) return Results.Forbid();
 
         return Results.Ok(category);
     }
@@ -81,7 +106,10 @@ public static class CategoryEndpoints
             if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
                 userId = parsed;
 
-            var category = await useCase.ExecuteAsync(request.Name, userId, request.Type);
+            if (request.OwnerUserId.HasValue && request.OwnerUserId.Value != userId)
+                return Results.Forbid();
+
+            var category = await useCase.ExecuteAsync(request.Name, userId, request.Type, request.OwnerUserId ?? userId);
             return Results.Ok(category);
         }
         catch (Exception ex)

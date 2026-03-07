@@ -14,6 +14,12 @@
         </MudButton>
     </MudStack>
 
+    <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2" Class="mb-3">
+        <MudTextField Label="Filtrar por usuário" Variant="Variant.Outlined" @bind-Value="_ownerUserIdFilter" Immediate="true" Placeholder="ID do usuário" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyUserFilter">Filtrar</MudButton>
+        <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="ResetUserFilter">Limpar</MudButton>
+    </MudStack>
+
     @if (_loading)
     {
         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-4" />
@@ -61,6 +67,8 @@
     private bool _loading = true;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
+    private string _ownerUserIdFilter = "";
+    private int? _loggedUserId;
 
     private Color GetTransactionColor(TransactionType type) =>
         type == TransactionType.Income ? Color.Success : Color.Error;
@@ -73,6 +81,8 @@
             Navigation.NavigateTo("/login");
             return;
         }
+        _loggedUserId = await TokenService.GetUserIdAsync();
+        _ownerUserIdFilter = _loggedUserId?.ToString() ?? string.Empty;
         await LoadCategories();
     }
 
@@ -81,7 +91,16 @@
         try
         {
             _loading = true;
-            _categories = await ApiClient.GetCategoriesAsync();
+            int? ownerUserId = null;
+            if (!string.IsNullOrWhiteSpace(_ownerUserIdFilter))
+            {
+                if (!int.TryParse(_ownerUserIdFilter, out var parsedOwnerUserId))
+                    throw new Exception("Informe um ID de usuário válido para o filtro.");
+
+                ownerUserId = parsedOwnerUserId;
+            }
+
+            _categories = await ApiClient.GetCategoriesAsync(ownerUserId);
         }
         catch (UnauthorizedAccessException)
         {
@@ -97,6 +116,17 @@
         {
             _loading = false;
         }
+    }
+
+    private async Task ApplyUserFilter()
+    {
+        await LoadCategories();
+    }
+
+    private async Task ResetUserFilter()
+    {
+        _ownerUserIdFilter = _loggedUserId?.ToString() ?? string.Empty;
+        await LoadCategories();
     }
 
     private async void NavigateToAdd()

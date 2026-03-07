@@ -122,6 +122,65 @@ public class TokenService
         Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
     }
 
+
+    public async Task<int?> GetUserIdAsync()
+    {
+        var token = await GetTokenAsync();
+        if (string.IsNullOrEmpty(token)) return null;
+
+        try
+        {
+            var root = DecodeTokenPayload(token);
+
+            if (TryGetIntClaim(root, "nameid", out var userId)
+                || TryGetIntClaim(root, "sub", out userId)
+                || TryGetIntClaim(root, "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier", out userId))
+            {
+                return userId;
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool TryGetIntClaim(System.Text.Json.JsonElement root, string claimName, out int value)
+    {
+        value = default;
+        if (!root.TryGetProperty(claimName, out var claim))
+            return false;
+
+        if (claim.ValueKind == System.Text.Json.JsonValueKind.Number && claim.TryGetInt32(out value))
+            return true;
+
+        if (claim.ValueKind == System.Text.Json.JsonValueKind.String && int.TryParse(claim.GetString(), out value))
+            return true;
+
+        return false;
+    }
+
+    private static System.Text.Json.JsonElement DecodeTokenPayload(string token)
+    {
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            throw new InvalidOperationException("Invalid token");
+
+        var payload = parts[1].Replace('-', '+').Replace('_', '/');
+        switch (payload.Length % 4)
+        {
+            case 2: payload += "=="; break;
+            case 3: payload += "="; break;
+        }
+
+        var bytes = Convert.FromBase64String(payload);
+        var json = System.Text.Encoding.UTF8.GetString(bytes);
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        return doc.RootElement.Clone();
+    }
+
     // Decode JWT token (no validation) and return the 'unique name' or Name claim if present
     public async Task<string?> GetUsernameAsync()
     {
@@ -129,25 +188,10 @@ public class TokenService
         if (string.IsNullOrEmpty(token)) return null;
         try
         {
-            // Manual JWT payload decode (base64url) to avoid adding JWT packages on the client
-            var parts = token.Split('.');
-            if (parts.Length < 2) return null;
-            var payload = parts[1];
-            // base64url -> base64
-            payload = payload.Replace('-', '+').Replace('_', '/');
-            switch (payload.Length % 4)
-            {
-                case 2: payload += "=="; break;
-                case 3: payload += "="; break;
-            }
-            var bytes = Convert.FromBase64String(payload);
-            var json = System.Text.Encoding.UTF8.GetString(bytes);
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var root = doc.RootElement;
+            var root = DecodeTokenPayload(token);
             string? name = null;
             if (root.TryGetProperty("unique_name", out var p)) name = p.GetString();
             if (string.IsNullOrEmpty(name) && root.TryGetProperty("name", out p)) name = p.GetString();
-            // common claim URI for name
             if (string.IsNullOrEmpty(name) && root.TryGetProperty("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name", out p)) name = p.GetString();
             return name;
         }
