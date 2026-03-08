@@ -14,7 +14,6 @@
             <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
             <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
         </MudSelect>
-        <MudTextField Label="Usuário (ID)" @bind-Value="_ownerUserId" Variant="Variant.Outlined" Required="true" />
         <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
 
         <MudButtonGroup Class="mt-4">
@@ -42,7 +41,7 @@
     @code {
     private string _name = "";
     private TransactionType _type = TransactionType.Expense;
-    private string _ownerUserId = "";
+    private int? _loggedUserId;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private bool _saving = false;
@@ -56,8 +55,7 @@
             return;
         }
 
-        var loggedUserId = await TokenService.GetUserIdAsync();
-        _ownerUserId = loggedUserId?.ToString() ?? string.Empty;
+        _loggedUserId = await TokenService.GetUserIdAsync();
     }
 
     private async Task Salvar()
@@ -69,9 +67,9 @@
             return;
         }
 
-        if (!int.TryParse(_ownerUserId, out var ownerUserId))
+        if (!_loggedUserId.HasValue)
         {
-            _message = "Informe um usuário válido para vincular a categoria";
+            _message = "Não foi possível identificar o usuário da sessão";
             _alertSeverity = Severity.Warning;
             return;
         }
@@ -79,7 +77,7 @@
         try
         {
             _saving = true;
-            await ApiClient.CreateCategoryAsync(_name, _type, ownerUserId);
+            await ApiClient.CreateCategoryAsync(_name, _type, _loggedUserId.Value);
 
             _message = "Categoria criada com sucesso!";
             _alertSeverity = Severity.Success;
