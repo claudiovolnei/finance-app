@@ -9,6 +9,11 @@ public class Category : BaseEntity
     public int UserId { get; private set; }
     public int OwnerUserId { get; private set; }
 
+    private Category()
+    {
+        Name = string.Empty;
+    }
+
     public Category(string name, int userId, TransactionType type, int? ownerUserId = null)
     {
         Name = name;
