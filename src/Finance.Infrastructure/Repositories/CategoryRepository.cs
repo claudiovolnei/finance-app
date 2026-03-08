@@ -23,9 +23,6 @@ public class CategoryRepository : ICategoryRepository
     public Task<List<Category>> GetByUserIdAsync(int userId)
         => _context.Categories.Where(c => c.UserId == userId).ToListAsync();
 
-    public Task<List<Category>> GetByOwnerUserIdAsync(int ownerUserId)
-        => _context.Categories.Where(c => c.OwnerUserId == ownerUserId).ToListAsync();
-
     public async Task AddAsync(Category category)
     {
         _context.Categories.Add(category);

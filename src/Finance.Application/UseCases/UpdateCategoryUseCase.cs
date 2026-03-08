@@ -17,7 +17,7 @@ public class UpdateCategoryUseCase
         if (category == null)
             throw new KeyNotFoundException($"Category with id {id} not found");
 
-        if (category.OwnerUserId != userId)
+        if (category.UserId != userId)
             throw new UnauthorizedAccessException("Not authorized");
 
         // O repositório irá atualizar usando EF Core

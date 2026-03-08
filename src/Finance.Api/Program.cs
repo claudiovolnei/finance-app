@@ -72,7 +72,6 @@ builder.Services.AddScoped<DeleteTransactionUseCase>();
 builder.Services.AddScoped<CreateCategoryUseCase>();
 builder.Services.AddScoped<UpdateCategoryUseCase>();
 builder.Services.AddScoped<DeleteCategoryUseCase>();
-builder.Services.AddScoped<GetCategoriesByOwnerUserUseCase>();
 
 // JWT and auth
 builder.Services.AddSingleton<Finance.Api.Services.JwtService>();

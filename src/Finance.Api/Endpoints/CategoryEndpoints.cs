@@ -19,12 +19,6 @@ public static class CategoryEndpoints
             .Produces<List<Finance.Domain.Entities.Category>>()
             .Produces(401);
 
-        group.MapGet("/by-user/{ownerUserId:int}", GetCategoriesByOwnerUser)
-            .WithName("GetCategoriesByOwnerUser")
-            .WithSummary("Lista categorias vinculadas a um usuário (usa sempre o usuário da sessão)")
-            .Produces<List<Finance.Domain.Entities.Category>>()
-            .Produces(401)
-            .Produces(403);
 
         group.MapGet("/{id:int}", GetCategoryById)
             .WithName("GetCategoryById")
@@ -64,31 +58,8 @@ public static class CategoryEndpoints
         if (!userId.HasValue)
             return Results.Unauthorized();
 
-        var categories = await repository.GetByOwnerUserIdAsync(userId.Value);
+        var categories = await repository.GetByUserIdAsync(userId.Value);
         return Results.Ok(categories);
-    }
-
-    private static async Task<IResult> GetCategoriesByOwnerUser(
-        HttpContext httpContext,
-        int ownerUserId,
-        GetCategoriesByOwnerUserUseCase useCase)
-    {
-        var userId = GetAuthenticatedUserId(httpContext);
-        if (!userId.HasValue)
-            return Results.Unauthorized();
-
-        if (ownerUserId != userId.Value)
-            return Results.Forbid();
-
-        try
-        {
-            var categories = await useCase.ExecuteAsync(userId.Value);
-            return Results.Ok(categories);
-        }
-        catch (Exception ex)
-        {
-            return Results.BadRequest(new { error = ex.Message });
-        }
     }
 
     private static async Task<IResult> GetCategoryById(HttpContext httpContext, int id, ICategoryRepository repository)
@@ -99,7 +70,7 @@ public static class CategoryEndpoints
 
         var category = await repository.GetByIdAsync(id);
         if (category == null) return Results.NotFound();
-        if (category.OwnerUserId != userId.Value) return Results.Forbid();
+        if (category.UserId != userId.Value) return Results.Forbid();
 
         return Results.Ok(category);
     }
@@ -115,10 +86,7 @@ public static class CategoryEndpoints
             if (!userId.HasValue)
                 return Results.Unauthorized();
 
-            if (request.OwnerUserId.HasValue && request.OwnerUserId.Value != userId.Value)
-                return Results.Forbid();
-
-            var category = await useCase.ExecuteAsync(request.Name, userId.Value, request.Type, userId.Value);
+            var category = await useCase.ExecuteAsync(request.Name, userId.Value, request.Type);
             return Results.Ok(category);
         }
         catch (Exception ex)
