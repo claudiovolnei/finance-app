@@ -17,7 +17,7 @@ public class DeleteCategoryUseCase
         if (category == null)
             throw new KeyNotFoundException($"Category with id {id} not found");
 
-        if (category.OwnerUserId != userId)
+        if (category.UserId != userId)
             throw new UnauthorizedAccessException("Not authorized");
 
         await _repository.DeleteAsync(id);

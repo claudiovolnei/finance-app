@@ -7,18 +7,16 @@ public class Category : BaseEntity
     public string Name { get; private set; }
     public TransactionType Type { get; private set; }
     public int UserId { get; private set; }
-    public int OwnerUserId { get; private set; }
 
     private Category()
     {
         Name = string.Empty;
     }
 
-    public Category(string name, int userId, TransactionType type, int? ownerUserId = null)
+    public Category(string name, int userId, TransactionType type)
     {
         Name = name;
         UserId = userId;
-        OwnerUserId = ownerUserId ?? userId;
         Type = type;
     }
 

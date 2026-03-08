@@ -77,7 +77,7 @@
         try
         {
             _saving = true;
-            await ApiClient.CreateCategoryAsync(_name, _type, _loggedUserId.Value);
+            await ApiClient.CreateCategoryAsync(_name, _type);
 
             _message = "Categoria criada com sucesso!";
             _alertSeverity = Severity.Success;
