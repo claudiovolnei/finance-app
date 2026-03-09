@@ -32,7 +32,15 @@ jobs:
             exit 0
           }
 
-          if (git rev-parse --verify --quiet "HEAD^") {
+          $beforeSha = "${{ github.event.before }}"
+          $currentSha = "${{ github.sha }}"
+
+          if ($beforeSha -and $beforeSha -ne "0000000000000000000000000000000000000000") {
+            Write-Host "Comparing changes from $beforeSha to $currentSha"
+            $changedFiles = git diff --name-only $beforeSha $currentSha
+          }
+          elseif (git rev-parse --verify --quiet "HEAD^") {
+            Write-Host "'before' sha is unavailable. Falling back to HEAD^..HEAD comparison."
             $changedFiles = git diff --name-only HEAD^ HEAD
           }
           else {
