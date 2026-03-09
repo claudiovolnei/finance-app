@@ -2,7 +2,6 @@
 @inject Finance.Mobile.Services.FinanceApiClient Api
 @inject Finance.Mobile.Services.TokenService TokenService
 @inject Finance.Mobile.Services.BiometricAuthService BiometricAuthService
-@inject IDialogService DialogService
 @inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
@@ -43,7 +42,7 @@
                 </MudButton>
 
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">
-                    Após @_biometricExpirationMinutes minutos sem autenticação, a biometria será solicitada novamente.
+                    O acesso deste usuário sempre exige biometria ao abrir o app.
                 </MudText>
             </MudStack>
         }
@@ -98,14 +97,13 @@
     private string _message = string.Empty;
     private Severity _severity = Severity.Info;
     private bool _showBiometricButton;
-    private int _biometricExpirationMinutes;
     private string? _usernameError;
     private bool _isBiometricPreferredMode;
     private bool _canReturnToBiometricMode;
+    private bool _autoBiometricTriggered;
 
     protected override async Task OnInitializedAsync()
     {
-        _biometricExpirationMinutes = TokenService.GetBiometricExpirationMinutes();
         await RefreshBiometricStateAsync();
 
         var reason = GetQueryValue("reason");
@@ -121,6 +119,15 @@
         }
     }
 
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !_isBiometricPreferredMode || _autoBiometricTriggered)
+            return;
+
+        _autoBiometricTriggered = true;
+        await DoBiometricLogin();
+    }
     private string? GetQueryValue(string key)
     {
         var uri = new Uri(Navigation.Uri);
@@ -230,33 +237,11 @@
         await TokenService.SaveTokenAsync(token);
         TokenService.SaveUsername(_username);
 
-        if (await BiometricAuthService.IsAvailableAsync() && !TokenService.HasRequestedBiometricPermission())
-        {
-            var useBiometric = await RequestBiometricPermissionAsync();
-            if (useBiometric)
-            {
-                TokenService.EnableBiometricLogin();
-                _message = "Biometria/facial ativada com sucesso.";
-                _severity = Severity.Success;
-            }
-            else
-            {
-                TokenService.MarkBiometricPermissionRequested();
-            }
-        }
+        if (await BiometricAuthService.IsAvailableAsync())
+            TokenService.EnableBiometricLogin();
 
-        Navigation.NavigateTo("/");
-    }
-
-    private async Task<bool> RequestBiometricPermissionAsync()
-    {
-        var result = await DialogService.ShowMessageBox(
-            "Ativar segurança biométrica",
-            "Deseja ativar biometria/reconhecimento facial para proteger seu acesso?",
-            yesText: "Ativar",
-            noText: "Agora não");
-
-        return result == true;
+        TokenService.ForceBiometricReauthentication();
+        Navigation.NavigateTo("/login?reason=locked", forceLoad: true);
     }
 
     private async Task DoBiometricLogin()

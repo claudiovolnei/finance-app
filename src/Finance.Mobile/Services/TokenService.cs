@@ -4,10 +4,8 @@ public class TokenService
 {
     private const string TOKEN_KEY = "finance_mobile_token";
     private const string BIOMETRIC_ENABLED_KEY = "finance_mobile_biometric_enabled";
-    private const string BIOMETRIC_LAST_AUTH_UTC_KEY = "finance_mobile_biometric_last_auth_utc";
-    private const string BIOMETRIC_PERMISSION_REQUESTED_KEY = "finance_mobile_biometric_permission_requested";
     private const string SAVED_USERNAME_KEY = "finance_mobile_saved_username";
-    private const int BIOMETRIC_EXPIRATION_MINUTES = 10;
+    private static bool _biometricAuthenticatedInSession;
 
     public async Task SaveTokenAsync(string token)
     {
@@ -56,17 +54,14 @@ public class TokenService
     public void EnableBiometricLogin()
     {
         Preferences.Set(BIOMETRIC_ENABLED_KEY, true);
-        Preferences.Set(BIOMETRIC_PERMISSION_REQUESTED_KEY, true);
-        MarkBiometricAuthentication();
+        _biometricAuthenticatedInSession = false;
     }
 
     public void DisableBiometricLogin()
     {
         Preferences.Remove(BIOMETRIC_ENABLED_KEY);
-        Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
+        _biometricAuthenticatedInSession = false;
     }
-
-    public bool HasRequestedBiometricPermission() => Preferences.Get(BIOMETRIC_PERMISSION_REQUESTED_KEY, false);
 
 
     public void SaveUsername(string username)
@@ -93,8 +88,6 @@ public class TokenService
         return string.Equals(savedUsername.Trim(), username.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
-    public void MarkBiometricPermissionRequested() => Preferences.Set(BIOMETRIC_PERMISSION_REQUESTED_KEY, true);
-
     public bool IsBiometricLoginEnabled() => Preferences.Get(BIOMETRIC_ENABLED_KEY, false);
 
     public bool RequiresBiometricAuthentication()
@@ -102,24 +95,18 @@ public class TokenService
         if (!IsBiometricLoginEnabled())
             return false;
 
-        var lastAuthRaw = Preferences.Get(BIOMETRIC_LAST_AUTH_UTC_KEY, null as string);
-        if (string.IsNullOrWhiteSpace(lastAuthRaw) || !DateTimeOffset.TryParse(lastAuthRaw, out var lastAuthUtc))
-            return true;
-
-        return DateTimeOffset.UtcNow - lastAuthUtc > TimeSpan.FromMinutes(BIOMETRIC_EXPIRATION_MINUTES);
+        return !_biometricAuthenticatedInSession;
     }
 
     public void MarkBiometricAuthentication()
     {
-        Preferences.Set(BIOMETRIC_LAST_AUTH_UTC_KEY, DateTimeOffset.UtcNow.ToString("O"));
+        _biometricAuthenticatedInSession = true;
     }
-
-    public int GetBiometricExpirationMinutes() => BIOMETRIC_EXPIRATION_MINUTES;
 
 
     public void ForceBiometricReauthentication()
     {
-        Preferences.Remove(BIOMETRIC_LAST_AUTH_UTC_KEY);
+        _biometricAuthenticatedInSession = false;
     }
 
 
