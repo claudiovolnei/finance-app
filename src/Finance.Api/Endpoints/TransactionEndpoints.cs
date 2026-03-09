@@ -66,7 +66,8 @@ public static class TransactionEndpoints
             t.Id,
             t.AccountId,
             t.CategoryId,
-            catMap.TryGetValue(t.CategoryId, out var n) ? n : string.Empty,
+            t.TransferAccountId,
+            t.CategoryId.HasValue && catMap.TryGetValue(t.CategoryId.Value, out var n) ? n : "Transferência",
             t.Amount,
             t.Date,
             t.Description,
@@ -87,12 +88,13 @@ public static class TransactionEndpoints
         if (transaction.UserId != userId)
             return Results.Forbid();
 
-        var category = await categoryRepo.GetByIdAsync(transaction.CategoryId);
+        var category = transaction.CategoryId.HasValue ? await categoryRepo.GetByIdAsync(transaction.CategoryId.Value) : null;
         var dto = new Dtos.TransactionResponseDto(
             transaction.Id,
             transaction.AccountId,
             transaction.CategoryId,
-            category?.Name ?? string.Empty,
+            transaction.TransferAccountId,
+            category?.Name ?? "Transferência",
             transaction.Amount,
             transaction.Date,
             transaction.Description,
@@ -115,6 +117,7 @@ public static class TransactionEndpoints
             await useCase.ExecuteAsync(
                 request.AccountId,
                 request.CategoryId,
+                request.TransferAccountId,
                 request.Amount,
                 request.Date,
                 request.Description ?? "",
@@ -146,6 +149,7 @@ public static class TransactionEndpoints
                 id,
                 request.AccountId,
                 request.CategoryId,
+                request.TransferAccountId,
                 request.Amount,
                 request.Date,
                 request.Description ?? "",

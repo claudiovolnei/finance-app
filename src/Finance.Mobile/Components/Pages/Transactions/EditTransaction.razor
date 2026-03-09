@@ -8,7 +8,6 @@
 @inject TokenService TokenService
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page">
-
     <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Editar lançamento</MudText>
 
     @if (_loading)
@@ -22,7 +21,27 @@
     else
     {
         <MudForm>
-            @if (_categories.Any())
+            <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="É transferência?" Class="mt-2" />
+
+            @if (_isTransfer)
+            {
+                <MudSelect T="TransferDirection" Label="Direção" @bind-Value="_transferDirection" Variant="Variant.Outlined" Required="true" Class="mt-4">
+                    <MudSelectItem Value="TransferDirection.Send">Enviar</MudSelectItem>
+                    <MudSelectItem Value="TransferDirection.Receive">Receber</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Class="mt-4">
+                    @foreach (var account in _availableAccounts)
+                    {
+                        <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
+                    }
+                </MudSelect>
+
+                <MudText Typo="Typo.body2" Class="mt-2 mud-text-secondary">
+                    Saldo da conta selecionada: @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransferAccountBalance)
+                </MudText>
+            }
+            else
             {
                 <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true">
                     @foreach (var category in _categories)
@@ -30,36 +49,21 @@
                         <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
                     }
                 </MudSelect>
-            }
-            else
-            {
-                <div class="mt-2"><MudProgressLinear Indeterminate="true" Color="Color.Primary" /></div>
-            }
 
-            <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
-                <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
-                <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
-            </MudSelect>
+                <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true" Class="mt-4">
+                    <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+                    <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+                </MudSelect>
+            }
 
             <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Class="mt-4"
                           Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
 
             <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" Class="mt-4" />
-
             <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" Class="mt-4" />
 
             <MudButtonGroup Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
-                    @if (_saving)
-                    {
-                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                        <MudText Class="ms-2">Salvando...</MudText>
-                    }
-                    else
-                    {
-                        <MudText>Salvar</MudText>
-                    }
-                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">Salvar</MudButton>
                 <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
             </MudButtonGroup>
         </MudForm>
@@ -72,174 +76,125 @@
 </MudContainer>
 
 @code {
+    private enum TransferDirection { Send, Receive }
+
     [Parameter] public int Id { get; set; }
     [Inject] public AccountSelectionState AccountState { get; set; } = default!;
 
     private List<Category> _categories = new();
+    private List<Account> _availableAccounts = new();
     private Finance.Mobile.Services.TransactionDto? _transaction;
     private int _categoryId;
+    private int _transferAccountId;
+    private decimal _selectedTransferAccountBalance;
     private decimal _amount;
     private string _amountText = "0,00";
     private DateTime _date = DateTime.Now;
     private string _description = "";
     private TransactionType _type = TransactionType.Expense;
+    private bool _isTransfer;
+    private TransferDirection _transferDirection = TransferDirection.Send;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private bool _loading = true;
-    private bool _saving = false;
-    private string CurrentMonthLabel => _date.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+    private bool _saving;
 
     protected override async Task OnInitializedAsync()
     {
         AccountState.OnChange += HandleAccountChanged;
-        var token = await TokenService.GetTokenAsync();
-        if (string.IsNullOrEmpty(token))
-        {
-            Navigation.NavigateTo("/login");
-            return;
-        }
-
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        try
-        {
-            _loading = true;
-            _categories = await ApiClient.GetCategoriesAsync();
-            _transaction = await ApiClient.GetTransactionByIdAsync(Id);
+        _loading = true;
+        _categories = await ApiClient.GetCategoriesAsync();
+        _transaction = await ApiClient.GetTransactionByIdAsync(Id);
+        await LoadTransferAccounts();
 
-            if (_transaction != null)
-            {
-                _categoryId = _transaction.CategoryId;
-                _amount = _transaction.Amount;
-                _amountText = _amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-                _date = _transaction.Date;
-                _description = _transaction.Description ?? string.Empty;
-                _type = _transaction.Type;
-            }
-        }
-        catch (Exception ex)
+        if (_transaction != null)
         {
-            _message = $"Erro ao carregar dados: {ex.Message}";
-            _alertSeverity = Severity.Error;
+            _isTransfer = _transaction.TransferAccountId.HasValue;
+            _categoryId = _transaction.CategoryId ?? 0;
+            _transferAccountId = _transaction.TransferAccountId ?? 0;
+            _amount = _transaction.Amount;
+            _amountText = _amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+            _date = _transaction.Date;
+            _description = _transaction.Description ?? string.Empty;
+            _type = _transaction.Type;
+            _transferDirection = _type == TransactionType.Expense ? TransferDirection.Send : TransferDirection.Receive;
+            if (_transferAccountId > 0) await LoadSelectedTransferAccountBalance();
         }
-        finally
-        {
-            _loading = false;
-        }
+
+        _loading = false;
+    }
+
+    private async Task LoadTransferAccounts()
+    {
+        var currentAccountId = AccountState.SelectedAccountId ?? 0;
+        var accounts = await ApiClient.GetAccountsAsync();
+        _availableAccounts = accounts.Where(a => a.Id != currentAccountId).ToList();
+        if (_transferAccountId == 0 && _availableAccounts.Any())
+            _transferAccountId = _availableAccounts.First().Id;
+    }
+
+    private async Task OnTransferAccountChanged(int value)
+    {
+        _transferAccountId = value;
+        await LoadSelectedTransferAccountBalance();
+    }
+
+    private async Task LoadSelectedTransferAccountBalance()
+    {
+        var account = await ApiClient.GetAccountByIdAsync(_transferAccountId);
+        if (account is null) return;
+        var tx = await ApiClient.GetTransactionsAsync(accountId: _transferAccountId);
+        var delta = tx.Sum(t => t.Type == TransactionType.Income ? t.Amount : -t.Amount);
+        _selectedTransferAccountBalance = account.InitialBalance + delta;
     }
 
     private async Task Salvar()
     {
-        if (_categoryId == 0)
+        if (!_isTransfer && _categoryId == 0)
         {
             _message = "Selecione uma categoria";
             _alertSeverity = Severity.Warning;
             return;
         }
 
-        // parse amount text to decimal
         if (!decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var parsedAmount))
-        {
-            _message = "Valor inválido";
-            _alertSeverity = Severity.Error;
             return;
-        }
+
         _amount = Math.Round(parsedAmount, 2);
+        await ApiClient.UpdateTransactionAsync(
+            Id,
+            AccountState.SelectedAccountId ?? 0,
+            _isTransfer ? null : _categoryId,
+            _isTransfer ? _transferAccountId : null,
+            _amount,
+            _date,
+            _description ?? string.Empty,
+            _isTransfer ? (_transferDirection == TransferDirection.Send ? TransactionType.Expense : TransactionType.Income) : _type);
 
-        try
-        {
-            _saving = true;
-            await ApiClient.UpdateTransactionAsync(
-                Id,
-                AccountState.SelectedAccountId.HasValue ? AccountState.SelectedAccountId.Value : 0,
-                _categoryId,
-                _amount,
-                _date,
-                _description ?? string.Empty,
-                _type);
-
-            _message = "Lançamento atualizada com sucesso!";
-            _alertSeverity = Severity.Success;
-            
-            await Task.Delay(1000);
-            Navigation.NavigateTo("/transactions");
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Navigation.NavigateTo("/login");
-        }
-        catch (Exception ex)
-        {
-            _message = $"Erro ao atualizar lançamento: {ex.Message}";
-            _alertSeverity = Severity.Error;
-        }
-        finally
-        {
-            _saving = false;
-        }
-    }
-
-    private void Cancelar()
-    {
         Navigation.NavigateTo("/transactions");
     }
+
+    private void Cancelar() => Navigation.NavigateTo("/transactions");
 
     private void FormatAmount(FocusEventArgs _)
     {
         if (decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v))
-        {
             _amountText = v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-        }
-        else
-        {
-            var normalized = _amountText?.Replace(".", ",");
-            if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v2))
-                _amountText = v2.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-        }
     }
 
     private void OnAmountInput(ChangeEventArgs e)
     {
-        var input = e?.Value?.ToString() ?? string.Empty;
-        var digits = new string(input.Where(char.IsDigit).ToArray());
-        if (string.IsNullOrEmpty(digits))
-        {
-            _amountText = "0,00";
-            return;
-        }
-        if (digits.Length == 1)
-            digits = "0" + digits;
-        var cents = long.Parse(digits);
-        var value = cents / 100m;
-        _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        var digits = new string((e?.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (string.IsNullOrEmpty(digits)) { _amountText = "0,00"; return; }
+        if (digits.Length == 1) digits = "0" + digits;
+        _amountText = (long.Parse(digits) / 100m).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     }
 
-    private Task PreviousMonth()
-    {
-        _date = _date.AddMonths(-1);
-        return Task.CompletedTask;
-    }
-
-    private Task NextMonth()
-    {
-        _date = _date.AddMonths(1);
-        return Task.CompletedTask;
-    }
-
-    private async void HandleAccountChanged()
-    {
-        await InvokeAsync(() =>
-        {
-            Navigation.NavigateTo("/transactions");
-            return Task.CompletedTask;
-        });
-    }
-
-    public void Dispose()
-    {
-        AccountState.OnChange -= HandleAccountChanged;
-    }
+    private async void HandleAccountChanged() => await InvokeAsync(() => Navigation.NavigateTo("/transactions"));
+    public void Dispose() => AccountState.OnChange -= HandleAccountChanged;
 }

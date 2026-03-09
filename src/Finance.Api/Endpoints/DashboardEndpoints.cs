@@ -34,7 +34,8 @@ public static class DashboardEndpoints
         var balance = await transactionRepo.GetBalanceTotal(userId, year ?? DateTime.Now.Year, accountId ?? 0);
 
         var categoryTotals = transactions
-            .GroupBy(t => new { t.CategoryId, t.Type })
+            .Where(t => t.CategoryId.HasValue)
+            .GroupBy(t => new { CategoryId = t.CategoryId!.Value, t.Type })
             .Select(g => new { g.Key.CategoryId, g.Key.Type, Amount = g.Sum(t => t.Amount) })
             .ToList();
 
@@ -52,7 +53,7 @@ public static class DashboardEndpoints
         var latest = new List<TransactionSummaryDto>();
         foreach (var t in latestTxs)
         {
-            var categoryName = categoryMap.TryGetValue(t.CategoryId, out var category) ? category : string.Empty;
+            var categoryName = t.CategoryId.HasValue && categoryMap.TryGetValue(t.CategoryId.Value, out var category) ? category : "Transferência";
             latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, categoryName, t.Amount, t.Type));
         }
 
