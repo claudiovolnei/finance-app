@@ -22,64 +22,70 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Detect new migrations
-        id: migration_changes
-        shell: pwsh
-        run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
-            "run_migrations=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            Write-Host "workflow_dispatch: migrations will run."
-            exit 0
-          }
-
-          $beforeSha = "${{ github.event.before }}"
-          $currentSha = "${{ github.sha }}"
-
-          if ($beforeSha -and $beforeSha -ne "0000000000000000000000000000000000000000") {
-            Write-Host "Comparing changes from $beforeSha to $currentSha"
-            $changedFiles = git diff --name-only $beforeSha $currentSha
-          }
-          elseif (git rev-parse --verify --quiet "HEAD^") {
-            Write-Host "'before' sha is unavailable. Falling back to HEAD^..HEAD comparison."
-            $changedFiles = git diff --name-only HEAD^ HEAD
-          }
-          else {
-            Write-Host "Repository has a single commit. Running migrations to keep database in sync."
-            "run_migrations=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            exit 0
-          }
-
-          $hasMigrations = $changedFiles | Where-Object { $_ -like 'src/Finance.Infrastructure/Migrations/*' }
-
-          if ($hasMigrations) {
-            "run_migrations=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            Write-Host "New migration files detected."
-          }
-          else {
-            "run_migrations=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-            Write-Host "No migration changes detected."
-          }
-
       - name: Install dotnet-ef
-        if: steps.migration_changes.outputs.run_migrations == 'true'
         run: dotnet tool install --global dotnet-ef
 
       - name: Restore projects for migrations
-        if: steps.migration_changes.outputs.run_migrations == 'true'
         run: |
           dotnet restore src/Finance.Infrastructure/Finance.Infrastructure.csproj
           dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Apply migrations
-        if: steps.migration_changes.outputs.run_migrations == 'true'
+      - name: Validate migration history and apply pending migrations
         shell: pwsh
         env:
-          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION || secrets.FINANCE_DB_CONNETION }}
+          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           if (-not $env:FINANCE_DB_CONNECTION) {
-            Write-Host "FINANCE_DB_CONNECTION/FINANCE_DB_CONNETION secret is not configured. Skipping migration update."
+            throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          $dbMigrationsRaw = @()
+          $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+
+          try {
+            $connection.Open()
+            $command = $connection.CreateCommand()
+            $command.CommandText = @"
+IF OBJECT_ID(N'__EFMigrationsHistory', N'U') IS NULL
+BEGIN
+    SELECT CAST(NULL AS nvarchar(150)) AS MigrationId
+END
+ELSE
+BEGIN
+    SELECT MigrationId FROM __EFMigrationsHistory
+END
+"@
+
+            $reader = $command.ExecuteReader()
+            while ($reader.Read()) {
+              if (-not $reader.IsDBNull(0)) {
+                $dbMigrationsRaw += $reader.GetString(0)
+              }
+            }
+            $reader.Close()
+          }
+          finally {
+            $connection.Close()
+          }
+
+          $dbMigrations = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+          foreach ($migration in $dbMigrationsRaw) {
+            $null = $dbMigrations.Add($migration)
+          }
+
+          $localMigrations = Get-ChildItem -Path 'src/Finance.Infrastructure/Migrations' -Filter '*.cs' |
+            Where-Object { $_.Name -notlike '*.Designer.cs' -and $_.BaseName -ne 'AppDbContextModelSnapshot' } |
+            ForEach-Object { $_.BaseName }
+
+          $missingMigrations = @($localMigrations | Where-Object { -not $dbMigrations.Contains($_) })
+
+          if ($missingMigrations.Count -eq 0) {
+            Write-Host "Database history already contains all local migrations."
             exit 0
           }
+
+          Write-Host "Pending migrations in history table: $($missingMigrations -join ', ')"
+          Write-Host "Applying migrations..."
 
           dotnet ef database update `
             --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
@@ -87,16 +93,13 @@ jobs:
             --context AppDbContext `
             --connection "$env:FINANCE_DB_CONNECTION"
 
-
       - name: Validate no pending migrations after update
-        if: steps.migration_changes.outputs.run_migrations == 'true'
         shell: pwsh
         env:
-          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION || secrets.FINANCE_DB_CONNETION }}
+          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           if (-not $env:FINANCE_DB_CONNECTION) {
-            Write-Host "FINANCE_DB_CONNECTION/FINANCE_DB_CONNETION secret is not configured. Skipping migration validation."
-            exit 0
+            throw "FINANCE_DB_CONNECTION secret is not configured."
           }
 
           $migrationsOutput = dotnet ef migrations list `
