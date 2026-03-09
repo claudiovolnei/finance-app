@@ -87,6 +87,50 @@ jobs:
             --context AppDbContext `
             --connection "$env:FINANCE_DB_CONNECTION"
 
+
+      - name: Validate latest migration in EF history
+        if: steps.migration_changes.outputs.run_migrations == 'true'
+        shell: pwsh
+        env:
+          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION || secrets.FINANCE_DB_CONNETION }}
+        run: |
+          if (-not $env:FINANCE_DB_CONNECTION) {
+            Write-Host "FINANCE_DB_CONNECTION/FINANCE_DB_CONNETION secret is not configured. Skipping EF history validation."
+            exit 0
+          }
+
+          $migrationFiles = Get-ChildItem "src/Finance.Infrastructure/Migrations" -Filter "*.cs" |
+            Where-Object { $_.Name -notlike "*Designer.cs" -and $_.Name -notlike "*ModelSnapshot.cs" } |
+            Sort-Object Name
+
+          if (-not $migrationFiles) {
+            throw "No migration files found in src/Finance.Infrastructure/Migrations."
+          }
+
+          $latestMigrationId = [System.IO.Path]::GetFileNameWithoutExtension($migrationFiles[-1].Name)
+          Write-Host "Latest migration in repository: $latestMigrationId"
+
+          $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+          try {
+            $connection.Open()
+            $command = $connection.CreateCommand()
+            $command.CommandText = "SELECT COUNT(1) FROM [__EFMigrationsHistory] WHERE [MigrationId] = @MigrationId"
+            [void]$command.Parameters.Add("@MigrationId", [System.Data.SqlDbType]::NVarChar, 150)
+            $command.Parameters["@MigrationId"].Value = $latestMigrationId
+
+            $count = [int]$command.ExecuteScalar()
+            if ($count -lt 1) {
+              throw "Migration '$latestMigrationId' was not found in __EFMigrationsHistory after database update."
+            }
+
+            Write-Host "Migration '$latestMigrationId' confirmed in __EFMigrationsHistory."
+          }
+          finally {
+            if ($connection.State -ne [System.Data.ConnectionState]::Closed) {
+              $connection.Close()
+            }
+          }
+
       - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
 
