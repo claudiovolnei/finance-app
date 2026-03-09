@@ -1,6 +1,7 @@
 using Finance.Api.Endpoints.Dtos;
 using Finance.Application.Repositories;
 using Finance.Application.UseCases;
+using Finance.Infrastructure.Repositories;
 
 namespace Finance.Api.Endpoints;
 
@@ -51,7 +52,7 @@ public static class TransactionEndpoints
             .Produces(404);
     }
 
-    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, int? year = null, int? month = null, int? accountId = null)
+    private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int? year = null, int? month = null, int? accountId = null)
     {
         var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
         int userId = 0;
@@ -61,12 +62,14 @@ public static class TransactionEndpoints
         var transactions = await repository.GetByUserIdAsync(userId, year, month, accountId);
         // fetch categories for the user to map names
         var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
         var catMap = categories.ToDictionary(c => c.Id, c => c.Name);
         var dtos = transactions.Select(t => new Dtos.TransactionResponseDto(
             t.Id,
             t.AccountId,
             t.CategoryId,
             t.TransferAccountId,
+            t.TransferAccountId.HasValue && accounts.FirstOrDefault(a => a.Id == t.TransferAccountId.Value) is var acc && acc != null ? acc.Name : "N/A",
             t.CategoryId.HasValue && catMap.TryGetValue(t.CategoryId.Value, out var n) ? n : "Transferência",
             t.Amount,
             t.Date,
@@ -75,7 +78,7 @@ public static class TransactionEndpoints
         return Results.Ok(dtos);
     }
 
-    private static async Task<IResult> GetTransactionById(HttpContext httpContext, int id, ITransactionRepository repository, ICategoryRepository categoryRepo)
+    private static async Task<IResult> GetTransactionById(HttpContext httpContext, int id, ITransactionRepository repository, ICategoryRepository categoryRepo, IAccountRepository accountRepository)
     {
         var transaction = await repository.GetByIdAsync(id);
         if (transaction == null) return Results.NotFound();
@@ -89,11 +92,14 @@ public static class TransactionEndpoints
             return Results.Forbid();
 
         var category = transaction.CategoryId.HasValue ? await categoryRepo.GetByIdAsync(transaction.CategoryId.Value) : null;
+        var account = transaction.TransferAccountId.HasValue ? await accountRepository.GetByIdAsync(transaction.TransferAccountId.Value) : null;
+
         var dto = new Dtos.TransactionResponseDto(
             transaction.Id,
             transaction.AccountId,
             transaction.CategoryId,
             transaction.TransferAccountId,
+            transaction.TransferAccountId.HasValue && account != null ? account.Name : "N/A",
             category?.Name ?? "Transferência",
             transaction.Amount,
             transaction.Date,

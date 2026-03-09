@@ -17,7 +17,7 @@ public static class DashboardEndpoints
             .Produces<DashboardSummaryDto>();
     }
 
-    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, int? year, int? month, int? accountId)
+    private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int? year, int? month, int? accountId)
     {
         // get user id from claims
         var userClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
@@ -54,7 +54,8 @@ public static class DashboardEndpoints
         foreach (var t in latestTxs)
         {
             var categoryName = t.CategoryId.HasValue && categoryMap.TryGetValue(t.CategoryId.Value, out var category) ? category : "Transferência";
-            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, categoryName, t.Amount, t.Type));
+            var accountName = t.TransferAccountId.HasValue ? accountRepository.GetByIdAsync(t.TransferAccountId.Value).Result?.Name : "N/A";
+            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, categoryName, t.Amount, t.Type, accountName));
         }
 
         var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latest);

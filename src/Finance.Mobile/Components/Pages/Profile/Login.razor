@@ -66,7 +66,7 @@
                           Class="mb-3" />
 
             <MudStack Spacing="2" Class="mt-4">
-                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Class="px-6">Entrar com senha</MudButton>
+                <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="DoLogin" Disabled="@_saving" Class="px-6">Entrar com senha</MudButton>
 
                 @if (_showBiometricButton)
                 {
@@ -101,6 +101,7 @@
     private bool _isBiometricPreferredMode;
     private bool _canReturnToBiometricMode;
     private bool _autoBiometricTriggered;
+    private bool _saving = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -215,6 +216,7 @@
 
     private async Task DoLogin()
     {
+        _saving = true;
         _message = string.Empty;
         _username = _username.Trim();
         _usernameError = ValidateUsername(_username);
@@ -223,6 +225,7 @@
         {
             _message = _usernameError;
             _severity = Severity.Warning;
+            _saving = false;
             return;
         }
 
@@ -231,6 +234,7 @@
         {
             _message = "Usuário ou senha inválidos.";
             _severity = Severity.Error;
+            _saving = false;
             return;
         }
 
@@ -240,7 +244,9 @@
         if (await BiometricAuthService.IsAvailableAsync())
             TokenService.EnableBiometricLogin();
 
+
         TokenService.ForceBiometricReauthentication();
+        _saving = false;
         Navigation.NavigateTo("/login?reason=locked", forceLoad: true);
     }
 

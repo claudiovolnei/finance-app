@@ -25,6 +25,7 @@ public record TransactionResponseDto(
     int AccountId,
     int? CategoryId,
     int? TransferAccountId,
+    string TransactionAccountName,
     string CategoryName,
     decimal Amount,
     DateTime Date,

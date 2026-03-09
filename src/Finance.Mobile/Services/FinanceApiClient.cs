@@ -125,6 +125,13 @@ public class FinanceApiClient
         var response = await _httpClient.PostAsJsonAsync(Url("transactions"), request);
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
+
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Erro de validação: {error}");
+        }
+
         response.EnsureSuccessStatusCode();
     }
 
@@ -150,6 +157,13 @@ public class FinanceApiClient
         var response = await _httpClient.PutAsJsonAsync(Url($"transactions/{id}"), request);
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             throw new UnauthorizedAccessException();
+
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Erro de validação: {error}");
+        }
+
         response.EnsureSuccessStatusCode();
     }
 

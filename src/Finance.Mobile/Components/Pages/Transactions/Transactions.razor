@@ -113,6 +113,15 @@
                 </MudPaper>
 
                 <MudGrid Class="transaction-detail-grid" GutterSize="GutterSize.Small">
+                    @if (!_selectedTransaction.TransactionAccountName.Equals("N/A"))
+                    {
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Class="transaction-detail-item" Elevation="0">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_selectedTransaction.Type == TransactionType.Income ? "Recebido da: " : "Enviado para: ") </MudText>
+                                <MudText Typo="Typo.body1">@_selectedTransaction.TransactionAccountName.ToString()</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    }
                     <MudItem xs="12" sm="6">
                         <MudPaper Class="transaction-detail-item" Elevation="0">
                             <MudText Typo="Typo.caption" Class="mud-text-secondary">Categoria</MudText>

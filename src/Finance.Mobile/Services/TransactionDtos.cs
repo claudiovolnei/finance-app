@@ -5,6 +5,7 @@ public record TransactionDto(
     int AccountId,
     int? CategoryId,
     int? TransferAccountId,
+    string TransactionAccountName,
     string CategoryName,
     decimal Amount,
     DateTime Date,
