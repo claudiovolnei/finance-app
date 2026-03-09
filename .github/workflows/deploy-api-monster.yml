@@ -45,16 +45,16 @@ jobs:
           try {
             $connection.Open()
             $command = $connection.CreateCommand()
-            $command.CommandText = @"
-IF OBJECT_ID(N'__EFMigrationsHistory', N'U') IS NULL
-BEGIN
-    SELECT CAST(NULL AS nvarchar(150)) AS MigrationId
-END
-ELSE
-BEGIN
-    SELECT MigrationId FROM __EFMigrationsHistory
-END
-"@
+            $command.CommandText = (
+              "IF OBJECT_ID(N'__EFMigrationsHistory', N'U') IS NULL" +
+              "`nBEGIN" +
+              "`n    SELECT CAST(NULL AS nvarchar(150)) AS MigrationId" +
+              "`nEND" +
+              "`nELSE" +
+              "`nBEGIN" +
+              "`n    SELECT MigrationId FROM __EFMigrationsHistory" +
+              "`nEND"
+            )
 
             $reader = $command.ExecuteReader()
             while ($reader.Read()) {
