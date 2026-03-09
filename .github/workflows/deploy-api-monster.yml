@@ -34,6 +34,7 @@ jobs:
         shell: pwsh
         env:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
+          ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
@@ -97,6 +98,7 @@ jobs:
         shell: pwsh
         env:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
+          ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
