@@ -32,7 +32,15 @@ jobs:
             exit 0
           }
 
-          if (git rev-parse --verify --quiet "HEAD^") {
+          $beforeSha = "${{ github.event.before }}"
+          $currentSha = "${{ github.sha }}"
+
+          if ($beforeSha -and $beforeSha -ne "0000000000000000000000000000000000000000") {
+            Write-Host "Comparing changes from $beforeSha to $currentSha"
+            $changedFiles = git diff --name-only $beforeSha $currentSha
+          }
+          elseif (git rev-parse --verify --quiet "HEAD^") {
+            Write-Host "'before' sha is unavailable. Falling back to HEAD^..HEAD comparison."
             $changedFiles = git diff --name-only HEAD^ HEAD
           }
           else {
@@ -78,6 +86,33 @@ jobs:
             --startup-project src/Finance.Api/Finance.Api.csproj `
             --context AppDbContext `
             --connection "$env:FINANCE_DB_CONNECTION"
+
+
+      - name: Validate no pending migrations after update
+        if: steps.migration_changes.outputs.run_migrations == 'true'
+        shell: pwsh
+        env:
+          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION || secrets.FINANCE_DB_CONNETION }}
+        run: |
+          if (-not $env:FINANCE_DB_CONNECTION) {
+            Write-Host "FINANCE_DB_CONNECTION/FINANCE_DB_CONNETION secret is not configured. Skipping migration validation."
+            exit 0
+          }
+
+          $migrationsOutput = dotnet ef migrations list `
+            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+            --startup-project src/Finance.Api/Finance.Api.csproj `
+            --context AppDbContext `
+            --connection "$env:FINANCE_DB_CONNECTION"
+
+          Write-Host $migrationsOutput
+
+          $pendingMigrations = $migrationsOutput | Where-Object { $_ -match '\(Pending\)' }
+          if ($pendingMigrations) {
+            throw "There are pending migrations after 'dotnet ef database update': $($pendingMigrations -join '; ')"
+          }
+
+          Write-Host "No pending migrations detected after database update."
 
       - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
