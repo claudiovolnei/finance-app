@@ -6,57 +6,99 @@
 @inject NavigationManager Navigation
 @inject TokenService TokenService
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page">
-    <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Novo lançamento</MudText>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page transfer-form-page">
+    <MudStack Spacing="1" Class="mb-2">
+        <MudText Typo="Typo.h5" Class="list-page-title">Novo lançamento</MudText>
+        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">Preencha os dados e escolha entre lançamento comum ou transferência entre contas.</MudText>
+    </MudStack>
+
+    <MudPaper Elevation="0" Class="transfer-mode-card mb-4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.subtitle2">Modo do lançamento</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_isTransfer ? "Transferência entre contas" : "Receita/Despesa com categoria")</MudText>
+            </MudStack>
+            <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="Transferência" />
+        </MudStack>
+    </MudPaper>
 
     <MudForm>
-        <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="É transferência?" Class="mt-2" />
-
         @if (_isTransfer)
         {
-            <MudSelect T="TransferDirection" Label="Direção" @bind-Value="_transferDirection" Variant="Variant.Outlined" Required="true" Class="mt-4">
-                <MudSelectItem Value="TransferDirection.Send">Enviar</MudSelectItem>
-                <MudSelectItem Value="TransferDirection.Receive">Receber</MudSelectItem>
-            </MudSelect>
+            <MudPaper Elevation="0" Class="transfer-section-card mb-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="TransferDirection" Label="Direção" @bind-Value="_transferDirection" Variant="Variant.Outlined" Required="true">
+                            <MudSelectItem Value="TransferDirection.Send">Enviar</MudSelectItem>
+                            <MudSelectItem Value="TransferDirection.Receive">Receber</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Disabled="@(!_availableAccounts.Any())">
+                            @foreach (var account in _availableAccounts)
+                            {
+                                <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
 
-            <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Class="mt-4">
-                @foreach (var account in _availableAccounts)
+                @if (!_availableAccounts.Any())
                 {
-                    <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
+                    <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined" Class="mt-3">
+                        Você precisa de ao menos duas contas para realizar transferências.
+                    </MudAlert>
                 }
-            </MudSelect>
-
-            <MudText Typo="Typo.body2" Class="mt-2 mud-text-secondary">
-                Saldo da conta selecionada: @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransferAccountBalance)
-            </MudText>
+                else
+                {
+                    <MudPaper Elevation="0" Class="selected-account-balance mt-3">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Saldo da conta selecionada</MudText>
+                        <MudText Typo="Typo.h6" Class="@GetBalanceClass(_selectedTransferAccountBalance)">
+                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransferAccountBalance)
+                        </MudText>
+                    </MudPaper>
+                }
+            </MudPaper>
         }
         else
         {
-            <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true" Class="mt-4">
-                <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
-                <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
-            </MudSelect>
-
-            @if (_categories.Any())
-            {
-                <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true">
-                    @foreach (var category in _categories)
-                    {
-                        <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
-                    }
-                </MudSelect>
-            }
+            <MudPaper Elevation="0" Class="transfer-section-card mb-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true">
+                            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+                            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true" Disabled="@(!_categories.Any())">
+                            @foreach (var category in _categories)
+                            {
+                                <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
         }
 
-        <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Class="mt-4"
-                      Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
+        <MudPaper Elevation="0" Class="transfer-section-card">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true"
+                                  Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
 
-        <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" Class="mt-4" />
-
-        <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" Class="mt-4" />
-
-        <MudButtonGroup Class="mt-4">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+        <MudStack Row="true" Spacing="1" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@(_saving || (_isTransfer && !_availableAccounts.Any()))">
                 @if (_saving)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
@@ -68,7 +110,7 @@
                 }
             </MudButton>
             <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
-        </MudButtonGroup>
+        </MudStack>
     </MudForm>
 
     @if (!string.IsNullOrEmpty(_message))
@@ -213,6 +255,8 @@
     }
 
     private void Cancelar() => Navigation.NavigateTo("/transactions");
+
+    private static string GetBalanceClass(decimal value) => value >= 0 ? "transfer-balance-positive" : "transfer-balance-negative";
 
     private void FormatAmount(FocusEventArgs _)
     {
