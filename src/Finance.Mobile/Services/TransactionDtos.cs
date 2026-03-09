@@ -3,7 +3,8 @@ namespace Finance.Mobile.Services;
 public record TransactionDto(
     int Id,
     int AccountId,
-    int CategoryId,
+    int? CategoryId,
+    int? TransferAccountId,
     string CategoryName,
     decimal Amount,
     DateTime Date,

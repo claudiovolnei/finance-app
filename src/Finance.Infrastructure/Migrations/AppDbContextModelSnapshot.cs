@@ -89,7 +89,10 @@ namespace Finance.Infrastructure.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("CategoryId")
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TransferAccountId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
@@ -110,7 +113,17 @@ namespace Finance.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("TransferAccountId");
+
                     b.ToTable("Transactions");
+                });
+
+            modelBuilder.Entity("Finance.Domain.Entities.Transaction", b =>
+                {
+                    b.HasOne("Finance.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("TransferAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Finance.Domain.Entities.User", b =>

@@ -106,7 +106,8 @@ public class FinanceApiClient
 
     public async Task CreateTransactionAsync(
         int accountId,
-        int categoryId,
+        int? categoryId,
+        int? transferAccountId,
         decimal amount,
         DateTime date,
         string description,
@@ -115,6 +116,7 @@ public class FinanceApiClient
         var request = new CreateTransactionRequest(
             accountId,
             categoryId,
+            transferAccountId,
             amount,
             date,
             description,
@@ -129,7 +131,8 @@ public class FinanceApiClient
     public async Task UpdateTransactionAsync(
         int id,
         int accountId,
-        int categoryId,
+        int? categoryId,
+        int? transferAccountId,
         decimal amount,
         DateTime date,
         string description,
@@ -138,6 +141,7 @@ public class FinanceApiClient
         var request = new UpdateTransactionRequest(
             accountId,
             categoryId,
+            transferAccountId,
             amount,
             date,
             description,
@@ -252,7 +256,8 @@ public class FinanceApiClient
     // Request DTOs
     private record CreateTransactionRequest(
         int AccountId,
-        int CategoryId,
+        int? CategoryId,
+        int? TransferAccountId,
         decimal Amount,
         DateTime Date,
         string? Description,
@@ -262,7 +267,8 @@ public class FinanceApiClient
 
     private record UpdateTransactionRequest(
         int AccountId,
-        int CategoryId,
+        int? CategoryId,
+        int? TransferAccountId,
         decimal Amount,
         DateTime Date,
         string? Description,

@@ -4,7 +4,8 @@ namespace Finance.Api.Endpoints.Dtos;
 
 public record CreateTransactionRequest(
     int AccountId,
-    int CategoryId,
+    int? CategoryId,
+    int? TransferAccountId,
     decimal Amount,
     DateTime Date,
     string? Description,
@@ -12,17 +13,18 @@ public record CreateTransactionRequest(
 
 public record UpdateTransactionRequest(
     int AccountId,
-    int CategoryId,
+    int? CategoryId,
+    int? TransferAccountId,
     decimal Amount,
     DateTime Date,
     string? Description,
     TransactionType Type);
 
-// DTO returned to clients including category name for display
 public record TransactionResponseDto(
     int Id,
     int AccountId,
-    int CategoryId,
+    int? CategoryId,
+    int? TransferAccountId,
     string CategoryName,
     decimal Amount,
     DateTime Date,

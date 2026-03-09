@@ -6,39 +6,99 @@
 @inject NavigationManager Navigation
 @inject TokenService TokenService
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page">
-    <MudText Typo="Typo.h5" Class="mb-4 list-page-title">Novo lançamento</MudText>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page transfer-form-page">
+    <MudStack Spacing="1" Class="mb-2">
+        <MudText Typo="Typo.h5" Class="list-page-title">Novo lançamento</MudText>
+        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">Preencha os dados e escolha entre lançamento comum ou transferência entre contas.</MudText>
+    </MudStack>
+
+    <MudPaper Elevation="0" Class="transfer-mode-card mb-4">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.subtitle2">Modo do lançamento</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_isTransfer ? "Transferência entre contas" : "Receita/Despesa com categoria")</MudText>
+            </MudStack>
+            <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="Transferência" />
+        </MudStack>
+    </MudPaper>
 
     <MudForm>
-        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true" Class="mt-4">
-            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
-            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
-        </MudSelect>
-
-        @if (_categories.Any())
+        @if (_isTransfer)
         {
-            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true">
-                @foreach (var category in _categories)
+            <MudPaper Elevation="0" Class="transfer-section-card mb-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="TransferDirection" Label="Direção" @bind-Value="_transferDirection" Variant="Variant.Outlined" Required="true">
+                            <MudSelectItem Value="TransferDirection.Send">Enviar</MudSelectItem>
+                            <MudSelectItem Value="TransferDirection.Receive">Receber</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Disabled="@(!_availableAccounts.Any())">
+                            @foreach (var account in _availableAccounts)
+                            {
+                                <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+
+                @if (!_availableAccounts.Any())
                 {
-                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                    <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined" Class="mt-3">
+                        Você precisa de ao menos duas contas para realizar transferências.
+                    </MudAlert>
                 }
-            </MudSelect>
+                else
+                {
+                    <MudPaper Elevation="0" Class="selected-account-balance mt-3">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Saldo da conta selecionada</MudText>
+                        <MudText Typo="Typo.h6" Class="@GetBalanceClass(_selectedTransferAccountBalance)">
+                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransferAccountBalance)
+                        </MudText>
+                    </MudPaper>
+                }
+            </MudPaper>
         }
         else
         {
-            <div class="mt-2"><MudProgressLinear Indeterminate="true" Color="Color.Primary" /></div>
+            <MudPaper Elevation="0" Class="transfer-section-card mb-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true">
+                            <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
+                            <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true" Disabled="@(!_categories.Any())">
+                            @foreach (var category in _categories)
+                            {
+                                <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
         }
 
+        <MudPaper Elevation="0" Class="transfer-section-card">
+            <MudGrid>
+                <MudItem xs="12" sm="6">
+                    <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true"
+                                  Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
 
-        <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Class="mt-4"
-                      Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
-
-        <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" Class="mt-4" />
-
-        <MudTextField Label="Descrição" @bind-Value="_description" Variant="Variant.Outlined" Lines="3" Class="mt-4" />
-
-        <MudButtonGroup Class="mt-4">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+        <MudStack Row="true" Spacing="1" Class="mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@(_saving || (_isTransfer && !_availableAccounts.Any()))">
                 @if (_saving)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
@@ -50,7 +110,7 @@
                 }
             </MudButton>
             <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
-        </MudButtonGroup>
+        </MudStack>
     </MudForm>
 
     @if (!string.IsNullOrEmpty(_message))
@@ -59,19 +119,26 @@
     }
 </MudContainer>
 
-    @code {
+@code {
+    private enum TransferDirection { Send, Receive }
+
+    [Inject] public AccountSelectionState AccountState { get; set; } = default!;
+
     private List<Category> _categories = new();
-    [Inject]
-    public AccountSelectionState AccountState { get; set; } = default!;
+    private List<Account> _availableAccounts = new();
     private int _categoryId;
+    private int _transferAccountId;
+    private decimal _selectedTransferAccountBalance;
     private decimal _amount;
     private string _amountText = "0,00";
     private DateTime _date = DateTime.Now;
     private string _description = "";
     private TransactionType _type = TransactionType.Expense;
+    private bool _isTransfer;
+    private TransferDirection _transferDirection = TransferDirection.Send;
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
-    private bool _saving = false;
+    private bool _saving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -83,77 +150,98 @@
         }
 
         await LoadCategories();
+        await LoadTransferAccounts();
     }
 
     private async Task OnTypeChanged(TransactionType value)
     {
         _type = value;
-        StateHasChanged();
         await LoadCategories();
     }
 
     private async Task LoadCategories()
     {
-        try
-        {
-            _categories = [];
-            StateHasChanged();
+        _categories = await ApiClient.GetCategoriesAsync();
+        _categories = _categories.Where(c => c.Type == _type).ToList();
+        if (_categories.Any()) _categoryId = _categories.First().Id;
+    }
 
-            _categories = await ApiClient.GetCategoriesAsync();
-            _categories = _categories.Where(c => c.Type == _type).ToList();
-            if (_categories.Any())
-            {
-                _categoryId = _categories.First().Id;
-            }
-            // initialize amount text with two decimals
-            _amountText = _amount.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-        }
-        catch (Exception ex)
+    private async Task LoadTransferAccounts()
+    {
+        var currentAccountId = AccountState.SelectedAccountId ?? 0;
+        var accounts = await ApiClient.GetAccountsAsync();
+        _availableAccounts = accounts.Where(a => a.Id != currentAccountId).ToList();
+
+        if (_availableAccounts.Any())
         {
-            _message = $"Erro ao carregar categorias: {ex.Message}";
-            _alertSeverity = Severity.Error;
+            _transferAccountId = _availableAccounts.First().Id;
+            await LoadSelectedTransferAccountBalance();
         }
+    }
+
+    private async Task OnTransferAccountChanged(int value)
+    {
+        _transferAccountId = value;
+        await LoadSelectedTransferAccountBalance();
+    }
+
+    private async Task LoadSelectedTransferAccountBalance()
+    {
+        var account = await ApiClient.GetAccountByIdAsync(_transferAccountId);
+        if (account is null)
+        {
+            _selectedTransferAccountBalance = 0;
+            return;
+        }
+
+        var tx = await ApiClient.GetTransactionsAsync(accountId: _transferAccountId);
+        var delta = tx.Sum(t => t.Type == TransactionType.Income ? t.Amount : -t.Amount);
+        _selectedTransferAccountBalance = account.InitialBalance + delta;
     }
 
     private async Task Salvar()
     {
-        if (_categoryId == 0)
+        if (!_isTransfer && _categoryId == 0)
         {
             _message = "Selecione uma categoria";
             _alertSeverity = Severity.Warning;
             return;
         }
 
+        if (_isTransfer && _transferAccountId == 0)
+        {
+            _message = "Selecione a conta para transferência";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
+        if (!decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var parsedAmount))
+        {
+            _message = "Valor inválido";
+            _alertSeverity = Severity.Error;
+            return;
+        }
+
+        _amount = Math.Round(parsedAmount, 2);
+
         try
         {
-            // parse amount text to decimal using pt-BR culture
-            if (!decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var parsedAmount))
-            {
-                _message = "Valor inválido";
-                _alertSeverity = Severity.Error;
-                return;
-            }
-
-            _amount = Math.Round(parsedAmount, 2);
-
             _saving = true;
             await ApiClient.CreateTransactionAsync(
-                AccountState.SelectedAccountId.HasValue ? AccountState.SelectedAccountId.Value : 0,
-                _categoryId,
+                AccountState.SelectedAccountId ?? 0,
+                _isTransfer ? null : _categoryId,
+                _isTransfer ? _transferAccountId : null,
                 _amount,
                 _date,
                 _description ?? string.Empty,
-                _type);
+                _isTransfer
+                    ? (_transferDirection == TransferDirection.Send ? TransactionType.Expense : TransactionType.Income)
+                    : _type);
 
             _message = "Lançamento criado com sucesso!";
             _alertSeverity = Severity.Success;
-            
             await Task.Delay(1000);
             Navigation.NavigateTo("/transactions");
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Navigation.NavigateTo("/login");
         }
         catch (Exception ex)
         {
@@ -166,40 +254,23 @@
         }
     }
 
-    private void Cancelar()
-    {
-        Navigation.NavigateTo("/transactions");
-    }
+    private void Cancelar() => Navigation.NavigateTo("/transactions");
+
+    private static string GetBalanceClass(decimal value) => value >= 0 ? "transfer-balance-positive" : "transfer-balance-negative";
 
     private void FormatAmount(FocusEventArgs _)
     {
         if (decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v))
-        {
             _amountText = v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-        }
-        else
-        {
-            var normalized = _amountText?.Replace(".", ",");
-            if (decimal.TryParse(normalized, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v2))
-                _amountText = v2.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
-        }
     }
 
     private void OnAmountInput(ChangeEventArgs e)
     {
         var input = e?.Value?.ToString() ?? string.Empty;
-        // keep only digits
         var digits = new string(input.Where(char.IsDigit).ToArray());
-        if (string.IsNullOrEmpty(digits))
-        {
-            _amountText = "0,00";
-            return;
-        }
-        // interpret digits as cents (right-to-left filling)
-        if (digits.Length == 1)
-            digits = "0" + digits;
+        if (string.IsNullOrEmpty(digits)) { _amountText = "0,00"; return; }
+        if (digits.Length == 1) digits = "0" + digits;
         var cents = long.Parse(digits);
-        var value = cents / 100m;
-        _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        _amountText = (cents / 100m).ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     }
 }
