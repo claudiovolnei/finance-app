@@ -71,12 +71,18 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="6">
-                        <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" @key="_type" Variant="Variant.Outlined" Required="true" Disabled="@(!_categories.Any())">
-                            @foreach (var category in _categories)
-                            {
-                                <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
-                            }
-                        </MudSelect>
+                        <MudAutocomplete T="Category"
+                                         Label="Categoria"
+                                         Value="_selectedCategory"
+                                         ValueChanged="OnCategoryChanged"
+                                         SearchFunc="SearchCategories"
+                                         ToStringFunc="@(c => c?.Name ?? string.Empty)"
+                                         CoerceText="true"
+                                         ResetValueOnEmptyText="true"
+                                         Variant="Variant.Outlined"
+                                         Required="true"
+                                         Dense="true"
+                                         Disabled="@(!_categories.Any())" />
                     </MudItem>
                 </MudGrid>
             </MudPaper>
@@ -127,6 +133,7 @@
     private List<Category> _categories = new();
     private List<Account> _availableAccounts = new();
     private int _categoryId;
+    private Category? _selectedCategory;
     private int _transferAccountId;
     private decimal _selectedTransferAccountBalance;
     private decimal _amount;
@@ -161,9 +168,37 @@
 
     private async Task LoadCategories()
     {
-        _categories = await ApiClient.GetCategoriesAsync();
-        _categories = _categories.Where(c => c.Type == _type).ToList();
-        if (_categories.Any()) _categoryId = _categories.First().Id;
+        _categories = (await ApiClient.GetCategoriesAsync())
+            .Where(c => c.Type == _type)
+            .ToList();
+
+        if (_selectedCategory is not null)
+        {
+            _selectedCategory = _categories.FirstOrDefault(c => c.Id == _selectedCategory.Id);
+        }
+
+        if (_selectedCategory is null)
+        {
+            _selectedCategory = _categories.FirstOrDefault();
+        }
+
+        _categoryId = _selectedCategory?.Id ?? 0;
+    }
+
+    private Task<IEnumerable<Category>> SearchCategories(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<Category>>(_categories);
+
+        var filtered = _categories.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<IEnumerable<Category>>(filtered);
+    }
+
+    private Task OnCategoryChanged(Category? category)
+    {
+        _selectedCategory = category;
+        _categoryId = category?.Id ?? 0;
+        return Task.CompletedTask;
     }
 
     private async Task LoadTransferAccounts()

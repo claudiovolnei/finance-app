@@ -76,15 +76,21 @@
                 <MudPaper Elevation="0" Class="transfer-section-card mb-4">
                     <MudGrid>
                         <MudItem xs="12" sm="6">
-                            <MudSelect T="int" Label="Categoria" @bind-Value="_categoryId" Variant="Variant.Outlined" Required="true" Disabled="@(!_categories.Any())">
-                                @foreach (var category in _categories)
-                                {
-                                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
-                                }
-                            </MudSelect>
+                            <MudAutocomplete T="Category"
+                                             Label="Categoria"
+                                             Value="_selectedCategory"
+                                             ValueChanged="OnCategoryChanged"
+                                             SearchFunc="SearchCategories"
+                                             ToStringFunc="@(c => c?.Name ?? string.Empty)"
+                                             CoerceText="true"
+                                             ResetValueOnEmptyText="true"
+                                             Variant="Variant.Outlined"
+                                             Required="true"
+                                             Dense="true"
+                                             Disabled="@(!_categories.Any())" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
-                            <MudSelect T="TransactionType" Label="Tipo" @bind-Value="_type" Variant="Variant.Outlined" Required="true">
+                            <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true">
                                 <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
                                 <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
                             </MudSelect>
@@ -141,6 +147,8 @@
     private List<Account> _availableAccounts = new();
     private Finance.Mobile.Services.TransactionDto? _transaction;
     private int _categoryId;
+    private Category? _selectedCategory;
+    private List<Category> _allCategories = new();
     private int _transferAccountId;
     private decimal _selectedTransferAccountBalance;
     private decimal _amount;
@@ -167,7 +175,7 @@
 
         try
         {
-            _categories = await ApiClient.GetCategoriesAsync();
+            _allCategories = await ApiClient.GetCategoriesAsync();
             _transaction = await ApiClient.GetTransactionByIdAsync(Id);
             await LoadTransferAccounts();
 
@@ -182,6 +190,14 @@
                 _description = _transaction.Description ?? string.Empty;
                 _type = _transaction.Type;
                 _transferDirection = _type == TransactionType.Expense ? TransferDirection.Send : TransferDirection.Receive;
+                RefreshCategoriesByType();
+                _selectedCategory = _categories.FirstOrDefault(c => c.Id == _categoryId);
+                if (_selectedCategory is null)
+                {
+                    _selectedCategory = _categories.FirstOrDefault();
+                    _categoryId = _selectedCategory?.Id ?? 0;
+                }
+
                 if (_transferAccountId > 0) await LoadSelectedTransferAccountBalance();
             }
         }
@@ -194,6 +210,42 @@
         {
             _loading = false;
         }
+    }
+
+    private void RefreshCategoriesByType()
+    {
+        _categories = _allCategories.Where(c => c.Type == _type).ToList();
+    }
+
+    private Task<IEnumerable<Category>> SearchCategories(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult<IEnumerable<Category>>(_categories);
+
+        var filtered = _categories.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<IEnumerable<Category>>(filtered);
+    }
+
+    private Task OnCategoryChanged(Category? category)
+    {
+        _selectedCategory = category;
+        _categoryId = category?.Id ?? 0;
+        return Task.CompletedTask;
+    }
+
+    private Task OnTypeChanged(TransactionType value)
+    {
+        _type = value;
+        RefreshCategoriesByType();
+
+        if (_selectedCategory is not null)
+            _selectedCategory = _categories.FirstOrDefault(c => c.Id == _selectedCategory.Id);
+
+        if (_selectedCategory is null)
+            _selectedCategory = _categories.FirstOrDefault();
+
+        _categoryId = _selectedCategory?.Id ?? 0;
+        return Task.CompletedTask;
     }
 
     private async Task LoadTransferAccounts()
@@ -266,7 +318,7 @@
 
             _message = "Lançamento atualizado com sucesso!";
             _alertSeverity = Severity.Success;
-            await Task.Delay(800);
+            await Task.Delay(300);
             Navigation.NavigateTo("/transactions");
         }
         catch (Exception ex)
