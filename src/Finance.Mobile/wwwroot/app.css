@@ -352,6 +352,31 @@ body {
     filter: brightness(1.03);
 }
 
+.category-list-surface {
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.category-summary-chip {
+    font-weight: 600;
+}
+
+.category-table-pro .mud-table-head .mud-table-cell {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #334155;
+}
+
+.category-table-pro .mud-table-cell {
+    border-bottom-color: rgba(148, 163, 184, 0.2);
+}
+
+.category-main-text {
+    font-weight: 600;
+    color: #0f172a;
+}
+
 .transaction-detail-overlay {
     position: fixed;
     inset: 0;
