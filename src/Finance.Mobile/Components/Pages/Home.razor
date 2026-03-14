@@ -29,7 +29,7 @@
         <MudItem xs="12" class="mt-3">
             <MudPaper Class="pa-4">
                 <MudText Typo="Typo.subtitle1" Class="mb-2">Categorias por tipo</MudText>
-                <CategoryBarChart Labels="@_chartLabels" Values="@_chartDataRaw" Types="@_chartTypes" EmptyMessage="Sem dados" />
+                <CategoryBarChart CategoryIds="@_chartCategoryIds" Labels="@_chartLabels" Values="@_chartDataRaw" Percentages="@_chartPercentages" Types="@_chartTypes" EmptyMessage="Sem dados" OnCategoryExpenseClick="OpenCategoryExpenseDialogAsync" />
             </MudPaper>
         </MudItem>
 
@@ -49,10 +49,34 @@
                 }
                 else
                 {
-                    <MudList T="TransactionSummaryDto"
-                            Dense="true"
-                             Class="pa-0">
-                        @foreach (var tx in _summary.LatestTransactions)
+                    @if (_latestIncomeTransactions.Any())
+                    {
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Créditos</MudText>
+                        <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0 mb-3">
+                            @foreach (var tx in _latestIncomeTransactions)
+                            {
+                                <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                        <MudStack Spacing="0" Style="min-width:0;">
+                                            <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                            <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                        </MudStack>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            <MudChip T="string" Color="Color.Success" Variant="Variant.Text" Size="Size.Small">Crédito</MudChip>
+                                            <MudText Typo="Typo.body2" Class="list-value-text" Color="Color.Success">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</MudText>
+                                        </MudStack>
+                                    </MudStack>
+                                </MudListItem>
+                                <MudDivider />
+                            }
+                        </MudList>
+                    }
+
+                    @if (_latestExpenseTransactions.Any())
+                    {
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Débitos</MudText>
+                        <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
+                            @foreach (var tx in _latestExpenseTransactions)
                         {
                             <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
@@ -72,12 +96,49 @@
                             </MudListItem>
                             <MudDivider />
                         }
-                    </MudList>
+                        </MudList>
+                    }
                 }
             </MudPaper>
         </MudItem>
     </MudGrid>
 </MudContainer>
+
+@if (_isExpenseDetailOpen)
+{
+    <MudOverlay Visible="true" AutoClose="true" OnClosed="CloseCategoryExpenseDialog">
+        <MudPaper Class="pa-4 mx-4 my-8" Style="max-width:720px; width:100%; margin:auto;">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                <MudText Typo="Typo.h6">@_expenseDialogTitle</MudText>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCategoryExpenseDialog" />
+            </MudStack>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">Total no mês: @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _expenseDialogTotal)</MudText>
+
+            @if (!_expenseDialogTransactions.Any())
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">Nenhum gasto nesta categoria no período.</MudAlert>
+            }
+            else
+            {
+                <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
+                    @foreach (var tx in _expenseDialogTransactions)
+                    {
+                        <MudListItem Class="px-0">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2">@tx.Description</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                </MudStack>
+                                <MudText Typo="Typo.body2" Color="Color.Error">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</MudText>
+                            </MudStack>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            }
+        </MudPaper>
+    </MudOverlay>
+}
 
 @if (_isTransactionPanelVisible && _selectedTransaction is not null)
 {
@@ -153,9 +214,17 @@
     [Inject] public NavigationManager Navigation { get; set; } = default!;
 
     private DashboardSummaryDto? _summary;
+    private int?[] _chartCategoryIds = Array.Empty<int?>();
     private string[] _chartLabels = Array.Empty<string>();
     private double[] _chartDataRaw = Array.Empty<double>();
+    private double[] _chartPercentages = Array.Empty<double>();
     private TransactionType[] _chartTypes = Array.Empty<TransactionType>();
+    private List<TransactionSummaryDto> _latestIncomeTransactions = new();
+    private List<TransactionSummaryDto> _latestExpenseTransactions = new();
+    private bool _isExpenseDetailOpen;
+    private string _expenseDialogTitle = "";
+    private decimal _expenseDialogTotal;
+    private List<TransactionSummaryDto> _expenseDialogTransactions = new();
     private int? _filterYear;
     private int? _filterMonth;
     private DateTime _current = DateTime.Now;
@@ -212,9 +281,21 @@
             }
 
             _summary = dto;
+            _chartCategoryIds = dto.Categories.Select(c => c.CategoryId).ToArray();
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
             _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
+            _chartPercentages = dto.Categories.Select(c => (double)c.Percentage).ToArray();
             _chartTypes = dto.Categories.Select(c => c.Type).ToArray();
+            _latestIncomeTransactions = dto.LatestTransactions
+                .Where(t => t.Type == TransactionType.Income)
+                .OrderByDescending(t => t.Date)
+                .ThenByDescending(t => t.Id)
+                .ToList();
+            _latestExpenseTransactions = dto.LatestTransactions
+                .Where(t => t.Type == TransactionType.Expense)
+                .OrderByDescending(t => t.Date)
+                .ThenByDescending(t => t.Id)
+                .ToList();
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -258,6 +339,37 @@
 
     private Color GetTransactionColor(TransactionType type) =>
         type == TransactionType.Income ? Color.Success : Color.Error;
+
+
+    private async Task OpenCategoryExpenseDialogAsync(int categoryId)
+    {
+        try
+        {
+            var details = await Api.GetCategoryExpensesAsync(categoryId, _filterYear, _filterMonth, AccountState.SelectedAccountId);
+            if (details is null)
+                return;
+
+            _expenseDialogTitle = $"Gastos em {details.CategoryName}";
+            _expenseDialogTotal = details.TotalExpense;
+            _expenseDialogTransactions = details.Transactions
+                .OrderByDescending(t => t.Date)
+                .ThenByDescending(t => t.Id)
+                .ToList();
+            _isExpenseDetailOpen = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // ignore
+        }
+    }
+
+    private Task CloseCategoryExpenseDialog()
+    {
+        _isExpenseDetailOpen = false;
+        _expenseDialogTransactions = new();
+        return Task.CompletedTask;
+    }
 
     public void Dispose()
     {

@@ -36,7 +36,7 @@
 
             <MudGrid Class="mb-3" AlignItems="AlignItems.Center">
                 <MudItem xs="12" sm="8">
-                    <MudTextField @bind-Value="_searchTerm"
+                    <MudTextField @bind-Value="SearchTerm"
                                   Label="Buscar categoria"
                                   Placeholder="Digite o nome da categoria"
                                   Adornment="Adornment.Start"
@@ -45,7 +45,7 @@
                                   Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect T="string" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Tune">
+                    <MudSelect T="string" Label="Tipo" @bind-Value="TypeFilter" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Tune">
                         <MudSelectItem Value="@("all")">Todos</MudSelectItem>
                         <MudSelectItem Value="@("income")">Receita</MudSelectItem>
                         <MudSelectItem Value="@("expense")">Despesa</MudSelectItem>
@@ -53,51 +53,53 @@
                 </MudItem>
             </MudGrid>
 
-            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@FilteredCategories.Count categorias encontradas</MudText>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2" Wrap="Wrap.Wrap">
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@FilteredCategories.Count categorias encontradas</MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">Itens por página</MudText>
+                    <MudSelect T="int" Value="@_pageSize" ValueChanged="OnPageSizeChanged" Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense" Style="min-width:88px;">
+                        <MudSelectItem Value="10">10</MudSelectItem>
+                        <MudSelectItem Value="20">20</MudSelectItem>
+                        <MudSelectItem Value="50">50</MudSelectItem>
+                    </MudSelect>
+                </MudStack>
+            </MudStack>
 
-            <MudTable T="Category"
-                      Items="FilteredCategories"
-                      Dense="false"
-                      Hover="true"
-                      Striped="true"
-                      Bordered="true"
-                      FixedHeader="true"
-                      Height="calc(100vh - 300px)"
-                      RowsPerPage="10"
-                      Class="category-table-full-height category-table-pro">
-                <HeaderContent>
-                    <MudTh>Categoria</MudTh>
-                    <MudTh>Tipo</MudTh>
-                    <MudTh Class="text-right">Ações</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Categoria">
-                        <MudStack Spacing="0">
-                            <MudText Typo="Typo.body1" Class="category-main-text">@context.Name</MudText>
-                            <MudText Typo="Typo.caption" Class="mud-text-secondary">ID #@context.Id</MudText>
-                        </MudStack>
-                    </MudTd>
-                    <MudTd DataLabel="Tipo">
-                        <MudChip T="string"
-                                 Color="@GetTransactionColor(context.Type)"
-                                 Variant="Variant.Outlined"
-                                 Size="Size.Small">
-                            @(context.Type == TransactionType.Income ? "Receita" : "Despesa")
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Ações" Class="text-right">
-                        <MudTooltip Text="Editar categoria">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
-                        </MudTooltip>
-                        <MudTooltip Text="Excluir categoria">
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(context.Id))" />
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <PagerContent>
-                    <MudTablePager PageSizeOptions="new int[] { 10, 20, 50 }" />
-                </PagerContent>
-            </MudTable>
+            @if (!PagedCategories.Any())
+            {
+                <MudAlert Severity="Severity.Info" Dense="true">Nenhuma categoria para os filtros selecionados.</MudAlert>
+            }
+            else
+            {
+                <MudList T="Category" Dense="true" Class="pa-0">
+                    @foreach (var category in PagedCategories)
+                    {
+                        <MudListItem Class="px-0">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%; gap:12px;">
+                                <MudStack Spacing="0" Style="min-width:0;">
+                                    <MudText Typo="Typo.body2" Class="list-primary-text">@category.Name</MudText>
+                                </MudStack>
+
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudChip T="string"
+                                             Color="@GetTransactionColor(category.Type)"
+                                             Variant="Variant.Text"
+                                             Size="Size.Small">
+                                        @(category.Type == TransactionType.Income ? "Receita" : "Despesa")
+                                    </MudChip>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(category.Id))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(category.Id))" />
+                                </MudStack>
+                            </MudStack>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+
+                <MudStack Row="true" Justify="Justify.Center" Class="mt-3">
+                    <MudPagination Count="@TotalPages" @bind-Selected="_currentPage" Color="Color.Primary" Size="Size.Small" />
+                </MudStack>
+            }
         </MudPaper>
     }
 
@@ -114,12 +116,44 @@
     private Severity _alertSeverity = Severity.Info;
     private string _searchTerm = string.Empty;
     private string _typeFilter = "all";
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private string SearchTerm
+    {
+        get => _searchTerm;
+        set
+        {
+            _searchTerm = value;
+            _currentPage = 1;
+        }
+    }
+
+    private string TypeFilter
+    {
+        get => _typeFilter;
+        set
+        {
+            _typeFilter = value;
+            _currentPage = 1;
+        }
+    }
 
     private List<Category> FilteredCategories =>
         _categories?
             .Where(c => string.IsNullOrWhiteSpace(_searchTerm) || c.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
             .Where(c => IsTypeMatch(c.Type))
+            .OrderBy(c => c.Type)
+            .ThenBy(c => c.Name)
             .ToList() ?? new List<Category>();
+
+    private List<Category> PagedCategories =>
+        FilteredCategories
+            .Skip((_currentPage - 1) * _pageSize)
+            .Take(_pageSize)
+            .ToList();
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling((double)FilteredCategories.Count / _pageSize));
 
     private bool IsTypeMatch(TransactionType type) =>
         _typeFilter switch
@@ -143,12 +177,20 @@
         await LoadCategories();
     }
 
+    private Task OnPageSizeChanged(int pageSize)
+    {
+        _pageSize = pageSize;
+        _currentPage = 1;
+        return Task.CompletedTask;
+    }
+
     private async Task LoadCategories()
     {
         try
         {
             _loading = true;
             _categories = await ApiClient.GetCategoriesAsync();
+            _currentPage = 1;
         }
         catch (UnauthorizedAccessException)
         {
