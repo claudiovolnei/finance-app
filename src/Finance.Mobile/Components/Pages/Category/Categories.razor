@@ -36,9 +36,9 @@
                 </MudItem>
                 <MudItem xs="12" sm="4">
                     <MudSelect T="string" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined">
-                        <MudSelectItem Value="all">Todos</MudSelectItem>
-                        <MudSelectItem Value="income">Receita</MudSelectItem>
-                        <MudSelectItem Value="expense">Despesa</MudSelectItem>
+                        <MudSelectItem Value="@("all")">Todos</MudSelectItem>
+                        <MudSelectItem Value="@("income")">Receita</MudSelectItem>
+                        <MudSelectItem Value="@("expense")">Despesa</MudSelectItem>
                     </MudSelect>
                 </MudItem>
             </MudGrid>
