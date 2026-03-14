@@ -72,6 +72,7 @@
                     </MudItem>
                     <MudItem xs="12" sm="6">
                         <MudAutocomplete T="Category"
+                                         @key="_categoryAutocompleteKey"
                                          Label="Categoria"
                                          Value="_selectedCategory"
                                          ValueChanged="OnCategoryChanged"
@@ -146,6 +147,7 @@
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private bool _saving;
+    private int _categoryAutocompleteKey;
 
     protected override async Task OnInitializedAsync()
     {
@@ -162,7 +164,13 @@
 
     private async Task OnTypeChanged(TransactionType value)
     {
+        if (_type == value)
+            return;
+
         _type = value;
+        _selectedCategory = null;
+        _categoryId = 0;
+        _categoryAutocompleteKey++;
         await LoadCategories();
     }
 
@@ -177,10 +185,7 @@
             _selectedCategory = _categories.FirstOrDefault(c => c.Id == _selectedCategory.Id);
         }
 
-        if (_selectedCategory is null)
-        {
-            _selectedCategory = _categories.FirstOrDefault();
-        }
+        _selectedCategory ??= _categories.FirstOrDefault();
 
         _categoryId = _selectedCategory?.Id ?? 0;
     }
