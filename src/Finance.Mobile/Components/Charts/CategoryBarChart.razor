@@ -13,7 +13,6 @@
 </style>
 
 @code {
-    public readonly record struct CategoryChartSelection(int? CategoryId, string Label, TransactionType Type);
     private readonly record struct CategoryChartItem(int? CategoryId, string Label, double Value, double Percentage, TransactionType Type);
 
     [Parameter] public int?[] CategoryIds { get; set; } = Array.Empty<int?>();
