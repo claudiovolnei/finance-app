@@ -13,13 +13,28 @@
 </style>
 
 @code {
+    public readonly record struct CategoryChartSelection(int? CategoryId, string Label, TransactionType Type);
+    private readonly record struct CategoryChartItem(int? CategoryId, string Label, double Value, double Percentage, TransactionType Type);
+
     [Parameter] public int?[] CategoryIds { get; set; } = Array.Empty<int?>();
     [Parameter] public string[] Labels { get; set; } = Array.Empty<string>();
     [Parameter] public double[] Values { get; set; } = Array.Empty<double>();
     [Parameter] public double[] Percentages { get; set; } = Array.Empty<double>();
     [Parameter] public TransactionType[] Types { get; set; } = Array.Empty<TransactionType>();
     [Parameter] public string? EmptyMessage { get; set; } = "Sem dados";
-    [Parameter] public EventCallback<int> OnCategoryExpenseClick { get; set; }
+    [Parameter] public EventCallback<CategoryChartSelection> OnCategoryClick { get; set; }
+
+    private IEnumerable<CategoryChartItem> ChartItems
+        => Labels.Select((label, i) => new CategoryChartItem(
+            CategoryIds.Length > i ? CategoryIds[i] : null,
+            label,
+            Values.Length > i ? Values[i] : 0.0,
+            Percentages.Length > i ? Percentages[i] : 0.0,
+            Types.Length > i ? Types[i] : TransactionType.Expense));
+
+    private List<CategoryChartItem> IncomeItems => ChartItems.Where(x => x.Type == TransactionType.Income).ToList();
+
+    private List<CategoryChartItem> ExpenseItems => ChartItems.Where(x => x.Type == TransactionType.Expense).ToList();
 }
 
 <div class="category-chart">
@@ -29,40 +44,54 @@
     }
     else
     {
-        for (int i = 0; i < Labels.Length; i++)
+        @if (IncomeItems.Any())
         {
-            var label = Labels[i];
-            var val = Values.Length > i ? Values[i] : 0.0;
-            var pct = Percentages.Length > i ? Percentages[i] : 0.0;
-            var type = Types.Length > i ? Types[i] : TransactionType.Expense;
-            var categoryId = CategoryIds.Length > i ? CategoryIds[i] : null;
-            var color = type == TransactionType.Income ? "#2e7d32" : "#c62828";
-            var typeLabel = type == TransactionType.Income ? "Crédito" : "Débito";
-            var clickable = type == TransactionType.Expense && categoryId.HasValue;
-
-            <div class="category-row @(clickable ? "category-row-clickable" : string.Empty)"
-                 @onclick="async () => await HandleCategoryClick(type, categoryId)">
-                <div class="cat-info">
-                    <div class="label">@label <small style="opacity:0.7">(@typeLabel)</small></div>
-                    <div class="amount">
-                        @string.Format(new CultureInfo("pt-BR"), "{0:C}", val)
-                        <small style="opacity:0.7">(@pct.ToString("N2", new CultureInfo("pt-BR"))%)</small>
+            <div class="cat-info">
+                <div class="label"><strong>Recebidos</strong></div>
+            </div>
+            @foreach (var item in IncomeItems)
+            {
+                <div class="category-row category-row-clickable"
+                     @onclick="async () => await HandleCategoryClick(item.Type, item.CategoryId, item.Label)">
+                    <div class="cat-info">
+                        <div class="label">@item.Label</div>
+                        <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", item.Value)</div>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar" style="width:@item.Percentage%;background:#2e7d32"></div>
                     </div>
                 </div>
-                <div class="bar-bg">
-                    <div class="bar" style="width:@pct%;background:@color"></div>
-                </div>
+            }
+        }
+
+        @if (ExpenseItems.Any())
+        {
+            <div class="cat-info" style="margin-top:12px;">
+                <div class="label"><strong>Despesas</strong></div>
             </div>
+            @foreach (var item in ExpenseItems)
+            {
+                <div class="category-row category-row-clickable"
+                     @onclick="async () => await HandleCategoryClick(item.Type, item.CategoryId, item.Label)">
+                    <div class="cat-info">
+                        <div class="label">@item.Label</div>
+                        <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", item.Value)</div>
+                    </div>
+                    <div class="bar-bg">
+                        <div class="bar" style="width:@item.Percentage%;background:#c62828"></div>
+                    </div>
+                </div>
+            }
         }
     }
 </div>
 
 @code {
-    private async Task HandleCategoryClick(TransactionType type, int? categoryId)
+    private async Task HandleCategoryClick(TransactionType type, int? categoryId, string label)
     {
-        if (type != TransactionType.Expense || !categoryId.HasValue || !OnCategoryExpenseClick.HasDelegate)
+        if (!OnCategoryClick.HasDelegate)
             return;
 
-        await OnCategoryExpenseClick.InvokeAsync(categoryId.Value);
+        await OnCategoryClick.InvokeAsync(new CategoryChartSelection(categoryId, label, type));
     }
 }

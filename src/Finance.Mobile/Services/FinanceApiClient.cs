@@ -62,6 +62,29 @@ public class FinanceApiClient
         return await resp.Content.ReadFromJsonAsync<CategoryExpenseDetailDto>();
     }
 
+
+
+    public async Task<CategoryTransactionsDetailDto?> GetCategoryTransactionsAsync(TransactionType type, int? categoryId = null, int? year = null, int? month = null, int? accountId = null)
+    {
+        var query = new List<string>
+        {
+            $"type={type}"
+        };
+
+        if (categoryId.HasValue) query.Add($"categoryId={categoryId.Value}");
+        if (year.HasValue) query.Add($"year={year.Value}");
+        if (month.HasValue) query.Add($"month={month.Value}");
+        if (accountId.HasValue) query.Add($"accountId={accountId.Value}");
+
+        var path = "dashboard/category-transactions" + (query.Any() ? $"?{string.Join("&", query)}" : string.Empty);
+
+        var resp = await _httpClient.GetAsync(Url(path));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<CategoryTransactionsDetailDto>();
+    }
     public async Task<string?> LoginAsync(string username, string password)
     {
         var resp = await _httpClient.PostAsJsonAsync(Url("auth/login"), new { Username = username, Password = password });

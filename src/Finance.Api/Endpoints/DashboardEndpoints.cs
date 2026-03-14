@@ -20,6 +20,11 @@ public static class DashboardEndpoints
             .WithName("GetCategoryExpenses")
             .WithSummary("Retorna os gastos de uma categoria no mês")
             .Produces<CategoryExpenseDetailDto>();
+
+        group.MapGet("/category-transactions", GetCategoryTransactions)
+            .WithName("GetCategoryTransactions")
+            .WithSummary("Retorna lançamentos por categoria/tipo, incluindo transferências")
+            .Produces<CategoryTransactionsDetailDto>();
     }
 
     private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int? year, int? month, int? accountId)
@@ -35,8 +40,7 @@ public static class DashboardEndpoints
         var balance = await transactionRepo.GetBalanceTotal(userId, year ?? DateTime.Now.Year, accountId ?? 0);
 
         var categoryTotals = transactions
-            .Where(t => t.CategoryId.HasValue)
-            .GroupBy(t => new { CategoryId = t.CategoryId!.Value, t.Type })
+            .GroupBy(t => new { t.CategoryId, t.Type })
             .Select(g => new { g.Key.CategoryId, g.Key.Type, Amount = g.Sum(t => t.Amount) })
             .ToList();
 
@@ -47,7 +51,9 @@ public static class DashboardEndpoints
         var categorySummaries = new List<CategorySummaryDto>();
         foreach (var c in categoryTotals)
         {
-            var name = categoryMap.TryGetValue(c.CategoryId, out var categoryName) ? categoryName : "Outros";
+            var name = c.CategoryId.HasValue && categoryMap.TryGetValue(c.CategoryId.Value, out var categoryName)
+                ? categoryName
+                : "Transferência";
             var typeTotal = totalsByType.TryGetValue(c.Type, out var total) ? total : 0m;
             var percent = typeTotal == 0 ? 0m : Math.Round((Math.Abs(c.Amount) / typeTotal) * 100m, 2);
             categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent, c.Type));
@@ -64,6 +70,30 @@ public static class DashboardEndpoints
         var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latest);
 
         return Results.Ok(dto);
+    }
+
+
+    private static async Task<IResult> GetCategoryTransactions(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, TransactionType type, int? categoryId, int? year, int? month, int? accountId)
+    {
+        var userId = GetUserId(httpContext);
+        var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+
+        var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
+
+        var filtered = transactions
+            .Where(t => t.Type == type && t.CategoryId == categoryId)
+            .OrderBy(t => t.Date)
+            .ThenBy(t => t.Id)
+            .ToList();
+
+        var title = categoryId.HasValue && categoryMap.TryGetValue(categoryId.Value, out var categoryName)
+            ? categoryName
+            : "Transferência";
+
+        var summaries = await BuildTransactionSummariesAsync(filtered, categoryMap, accountRepository);
+
+        return Results.Ok(new CategoryTransactionsDetailDto(categoryId, title, filtered.Sum(t => t.Amount), type, summaries));
     }
 
     private static async Task<IResult> GetCategoryExpenses(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int categoryId, int? year, int? month, int? accountId)
