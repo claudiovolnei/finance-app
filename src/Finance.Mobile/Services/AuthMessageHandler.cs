@@ -4,6 +4,7 @@ namespace Finance.Mobile.Services;
 
 public class AuthMessageHandler : DelegatingHandler
 {
+    private static readonly SemaphoreSlim BiometricChallengeLock = new(1, 1);
     private readonly TokenService _tokenService;
     private readonly BiometricAuthService _biometricAuthService;
 
@@ -20,17 +21,28 @@ public class AuthMessageHandler : DelegatingHandler
         {
             if (_tokenService.RequiresBiometricAuthentication())
             {
-                var authenticated = await _biometricAuthService.AuthenticateAsync("Confirme sua biometria para continuar");
-                if (!authenticated)
+                await BiometricChallengeLock.WaitAsync(cancellationToken);
+                try
                 {
-                    _tokenService.ForceBiometricReauthentication();
-                    return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                    if (_tokenService.RequiresBiometricAuthentication())
                     {
-                        RequestMessage = request
-                    };
-                }
+                        var authenticated = await _biometricAuthService.AuthenticateAsync("Confirme sua biometria para continuar");
+                        if (!authenticated)
+                        {
+                            _tokenService.ForceBiometricReauthentication();
+                            return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                            {
+                                RequestMessage = request
+                            };
+                        }
 
-                _tokenService.MarkBiometricAuthentication();
+                        _tokenService.MarkBiometricAuthentication();
+                    }
+                }
+                finally
+                {
+                    BiometricChallengeLock.Release();
+                }
             }
 
             // ensure single Authorization header

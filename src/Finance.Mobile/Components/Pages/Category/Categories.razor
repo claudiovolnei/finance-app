@@ -35,10 +35,10 @@
                                   Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect T="TransactionType?" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined">
-                        <MudSelectItem Value="@(null as TransactionType?)">Todos</MudSelectItem>
-                        <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
-                        <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
+                    <MudSelect T="string" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined">
+                        <MudSelectItem Value="all">Todos</MudSelectItem>
+                        <MudSelectItem Value="income">Receita</MudSelectItem>
+                        <MudSelectItem Value="expense">Despesa</MudSelectItem>
                     </MudSelect>
                 </MudItem>
             </MudGrid>
@@ -92,13 +92,21 @@
     private string _message = "";
     private Severity _alertSeverity = Severity.Info;
     private string _searchTerm = string.Empty;
-    private TransactionType? _typeFilter;
+    private string _typeFilter = "all";
 
     private List<Category> FilteredCategories =>
         _categories?
             .Where(c => string.IsNullOrWhiteSpace(_searchTerm) || c.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
-            .Where(c => !_typeFilter.HasValue || c.Type == _typeFilter.Value)
+            .Where(c => IsTypeMatch(c.Type))
             .ToList() ?? new List<Category>();
+
+    private bool IsTypeMatch(TransactionType type) =>
+        _typeFilter switch
+        {
+            "income" => type == TransactionType.Income,
+            "expense" => type == TransactionType.Expense,
+            _ => true
+        };
 
     private Color GetTransactionColor(TransactionType type) =>
         type == TransactionType.Income ? Color.Success : Color.Error;
