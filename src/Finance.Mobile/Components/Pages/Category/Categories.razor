@@ -24,18 +24,28 @@
     }
     else
     {
-        <MudPaper Class="pa-4" Elevation="1">
-            <MudGrid Class="mb-3">
+        <MudPaper Class="pa-4 category-list-surface" Elevation="1">
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="1" Class="mb-3">
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Class="category-summary-chip">
+                    Total: @_categories!.Count
+                </MudChip>
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="category-summary-chip">
+                    Exibindo: @FilteredCategories.Count
+                </MudChip>
+            </MudStack>
+
+            <MudGrid Class="mb-3" AlignItems="AlignItems.Center">
                 <MudItem xs="12" sm="8">
                     <MudTextField @bind-Value="_searchTerm"
-                                  Placeholder="Filtrar por nome da categoria"
+                                  Label="Buscar categoria"
+                                  Placeholder="Digite o nome da categoria"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   Immediate="true"
                                   Variant="Variant.Outlined" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
-                    <MudSelect T="string" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined">
+                    <MudSelect T="string" Label="Tipo" @bind-Value="_typeFilter" Variant="Variant.Outlined" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Tune">
                         <MudSelectItem Value="@("all")">Todos</MudSelectItem>
                         <MudSelectItem Value="@("income")">Receita</MudSelectItem>
                         <MudSelectItem Value="@("expense")">Despesa</MudSelectItem>
@@ -47,30 +57,41 @@
 
             <MudTable T="Category"
                       Items="FilteredCategories"
-                      Dense="true"
+                      Dense="false"
                       Hover="true"
+                      Striped="true"
+                      Bordered="true"
                       FixedHeader="true"
                       Height="calc(100vh - 300px)"
                       RowsPerPage="10"
-                      Class="category-table-full-height">
+                      Class="category-table-full-height category-table-pro">
                 <HeaderContent>
                     <MudTh>Categoria</MudTh>
                     <MudTh>Tipo</MudTh>
                     <MudTh Class="text-right">Ações</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Categoria">@context.Name</MudTd>
+                    <MudTd DataLabel="Categoria">
+                        <MudStack Spacing="0">
+                            <MudText Typo="Typo.body1" Class="category-main-text">@context.Name</MudText>
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">ID #@context.Id</MudText>
+                        </MudStack>
+                    </MudTd>
                     <MudTd DataLabel="Tipo">
                         <MudChip T="string"
                                  Color="@GetTransactionColor(context.Type)"
-                                 Variant="Variant.Filled"
+                                 Variant="Variant.Outlined"
                                  Size="Size.Small">
                             @(context.Type == TransactionType.Income ? "Receita" : "Despesa")
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Ações" Class="text-right">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(context.Id))" />
+                        <MudTooltip Text="Editar categoria">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(context.Id))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Excluir categoria">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(context.Id))" />
+                        </MudTooltip>
                     </MudTd>
                 </RowTemplate>
                 <PagerContent>
