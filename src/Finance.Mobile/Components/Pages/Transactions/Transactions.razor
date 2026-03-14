@@ -50,35 +50,66 @@
     {
         <MudPaper Class="pa-4" Elevation="1">
             <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_transactions.Count lançamentos no período</MudText>
-            <MudList T="TransactionDto" Dense="true" Class="pa-0">
-                @foreach (var tx in _transactions)
-                {
-                    <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                            <MudStack Spacing="0" Style="min-width:0;">
-                                <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
-                                <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
-                            </MudStack>
 
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
-                                    @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
-                                </MudChip>
-                                <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
-                                    @tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))
-                                </MudText>
-                                <span @onclick:stopPropagation="true">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />
-                                </span>
-                                <span @onclick:stopPropagation="true">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" />
-                                </span>
+            @if (_incomeTransactions.Any())
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Créditos</MudText>
+                <MudList T="TransactionDto" Dense="true" Class="pa-0 mb-3">
+                    @foreach (var tx in _incomeTransactions)
+                    {
+                        <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                <MudStack Spacing="0" Style="min-width:0;">
+                                    <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                </MudStack>
+
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudChip T="string" Color="Color.Success" Variant="Variant.Text" Size="Size.Small">Crédito</MudChip>
+                                    <MudText Typo="Typo.body2" Class="list-value-text" Color="Color.Success">@tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudText>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />
+                                    </span>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" />
+                                    </span>
+                                </MudStack>
                             </MudStack>
-                        </MudStack>
-                    </MudListItem>
-                    <MudDivider />
-                }
-            </MudList>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            }
+
+            @if (_expenseTransactions.Any())
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Débitos</MudText>
+                <MudList T="TransactionDto" Dense="true" Class="pa-0">
+                    @foreach (var tx in _expenseTransactions)
+                    {
+                        <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                <MudStack Spacing="0" Style="min-width:0;">
+                                    <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                </MudStack>
+
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudChip T="string" Color="Color.Error" Variant="Variant.Text" Size="Size.Small">Débito</MudChip>
+                                    <MudText Typo="Typo.body2" Class="list-value-text" Color="Color.Error">@tx.Amount.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudText>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(tx.Id))" />
+                                    </span>
+                                    <span @onclick:stopPropagation="true">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTransaction(tx.Id))" />
+                                    </span>
+                                </MudStack>
+                            </MudStack>
+                        </MudListItem>
+                        <MudDivider />
+                    }
+                </MudList>
+            }
         </MudPaper>
     }
 
@@ -160,6 +191,8 @@
     private decimal _totalBalanceMonth = 0;
     private decimal _totalIncomeMonth = 0;
     private decimal _totalExpenseMonth = 0;
+    private List<TransactionDto> _incomeTransactions = new();
+    private List<TransactionDto> _expenseTransactions = new();
     private TransactionDto? _selectedTransaction;
     private bool _isTransactionDialogOpen;
     private bool _isTransactionPanelVisible;
@@ -207,6 +240,9 @@
         {
             _loading = true;
             _transactions = await ApiClient.GetTransactionsAsync(_filterYear, _filterMonth, AccountState.SelectedAccountId);
+            _transactions = _transactions.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToList();
+            _incomeTransactions = _transactions.Where(t => t.Type == TransactionType.Income).ToList();
+            _expenseTransactions = _transactions.Where(t => t.Type == TransactionType.Expense).ToList();
             _totalBalanceMonth = _transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount) - _transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
             _totalIncomeMonth = _transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
             _totalExpenseMonth = _transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);

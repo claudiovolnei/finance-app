@@ -5,6 +5,7 @@
 <style>
     .category-chart { width:100%; }
     .category-row { display:flex; flex-direction:column; gap:6px; margin-bottom:12px; }
+    .category-row-clickable { cursor:pointer; }
     .cat-info { display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:4px; }
     .bar-bg { background:rgba(0,0,0,0.04); height:18px; border-radius:10px; overflow:hidden; }
     .bar { height:100%; border-radius:10px 0 0 10px; }
@@ -12,10 +13,13 @@
 </style>
 
 @code {
+    [Parameter] public int?[] CategoryIds { get; set; } = Array.Empty<int?>();
     [Parameter] public string[] Labels { get; set; } = Array.Empty<string>();
     [Parameter] public double[] Values { get; set; } = Array.Empty<double>();
+    [Parameter] public double[] Percentages { get; set; } = Array.Empty<double>();
     [Parameter] public TransactionType[] Types { get; set; } = Array.Empty<TransactionType>();
     [Parameter] public string? EmptyMessage { get; set; } = "Sem dados";
+    [Parameter] public EventCallback<int> OnCategoryExpenseClick { get; set; }
 }
 
 <div class="category-chart">
@@ -25,20 +29,25 @@
     }
     else
     {
-        double max = Values.Max();
         for (int i = 0; i < Labels.Length; i++)
         {
             var label = Labels[i];
             var val = Values.Length > i ? Values[i] : 0.0;
-            var pct = max > 0 ? Math.Round((val / max) * 100, 2) : 0.0;
+            var pct = Percentages.Length > i ? Percentages[i] : 0.0;
             var type = Types.Length > i ? Types[i] : TransactionType.Expense;
+            var categoryId = CategoryIds.Length > i ? CategoryIds[i] : null;
             var color = type == TransactionType.Income ? "#2e7d32" : "#c62828";
             var typeLabel = type == TransactionType.Income ? "Crédito" : "Débito";
+            var clickable = type == TransactionType.Expense && categoryId.HasValue;
 
-            <div class="category-row">
+            <div class="category-row @(clickable ? "category-row-clickable" : string.Empty)"
+                 @onclick="async () => await HandleCategoryClick(type, categoryId)">
                 <div class="cat-info">
                     <div class="label">@label <small style="opacity:0.7">(@typeLabel)</small></div>
-                    <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", val)</div>
+                    <div class="amount">
+                        @string.Format(new CultureInfo("pt-BR"), "{0:C}", val)
+                        <small style="opacity:0.7">(@pct.ToString("N2", new CultureInfo("pt-BR"))%)</small>
+                    </div>
                 </div>
                 <div class="bar-bg">
                     <div class="bar" style="width:@pct%;background:@color"></div>
@@ -47,3 +56,13 @@
         }
     }
 </div>
+
+@code {
+    private async Task HandleCategoryClick(TransactionType type, int? categoryId)
+    {
+        if (type != TransactionType.Expense || !categoryId.HasValue || !OnCategoryExpenseClick.HasDelegate)
+            return;
+
+        await OnCategoryExpenseClick.InvokeAsync(categoryId.Value);
+    }
+}

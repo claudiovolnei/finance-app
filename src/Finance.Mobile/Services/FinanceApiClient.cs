@@ -43,6 +43,25 @@ public class FinanceApiClient
         return dto;
     }
 
+
+    public async Task<CategoryExpenseDetailDto?> GetCategoryExpensesAsync(int categoryId, int? year = null, int? month = null, int? accountId = null)
+    {
+        var query = new List<string>();
+        if (year.HasValue) query.Add($"year={year.Value}");
+        if (month.HasValue) query.Add($"month={month.Value}");
+        if (accountId.HasValue) query.Add($"accountId={accountId.Value}");
+        var path = $"dashboard/category-expenses/{categoryId}" + (query.Any() ? $"?{string.Join("&", query)}" : string.Empty);
+
+        var resp = await _httpClient.GetAsync(Url(path));
+        if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+        if (resp.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<CategoryExpenseDetailDto>();
+    }
+
     public async Task<string?> LoginAsync(string username, string password)
     {
         var resp = await _httpClient.PostAsJsonAsync(Url("auth/login"), new { Username = username, Password = password });
