@@ -178,13 +178,13 @@ body {
     .main-container {
         margin-top: 0 !important;
         padding-top: 1rem !important;
-        padding-bottom: calc(90px + var(--safe-bottom)) !important;
+        padding-bottom: 0 !important;
     }
 
     .mud-main-content-full {
         height: calc(100dvh - (var(--appbar-mobile-height) + var(--safe-top) + 4px));
         padding-top: 1rem;
-        padding-bottom: calc(84px + var(--safe-bottom));
+        padding-bottom: calc(78px + var(--safe-bottom));
     }
 }
 
