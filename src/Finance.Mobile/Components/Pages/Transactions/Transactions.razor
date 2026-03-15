@@ -32,9 +32,9 @@
     </MudGrid>
 
     <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="entity-page-header">
-        <MudText Typo="Typo.h5" Class="list-page-title">Transações</MudText>
+        <MudText Typo="Typo.h4" Class="list-page-title transaction-title">Lançamentos</MudText>
         <MudButton Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Material.Filled.Add" Class="new-entity-button" OnClick="NavigateToAdd">
-            Nova
+            Novo lançamento
         </MudButton>
     </MudStack>
 
@@ -49,11 +49,14 @@
     else
     {
         <MudPaper Class="pa-4" Elevation="1">
-            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_transactions.Count lançamentos no período</MudText>
+            @if (_transactions.Any())
+            {
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_transactions.Count lançamentos no período</MudText>
+            }
 
             @if (_incomeTransactions.Any())
             {
-                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Créditos</MudText>
+                <MudText Typo="Typo.subtitle2" Class="transaction-group-title transaction-group-title-income mb-1">Créditos</MudText>
                 <MudList T="TransactionDto" Dense="true" Class="pa-0 mb-3">
                     @foreach (var tx in _incomeTransactions)
                     {
@@ -83,7 +86,7 @@
 
             @if (_expenseTransactions.Any())
             {
-                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Débitos</MudText>
+                <MudText Typo="Typo.subtitle2" Class="transaction-group-title transaction-group-title-expense mb-1">Débitos</MudText>
                 <MudList T="TransactionDto" Dense="true" Class="pa-0">
                     @foreach (var tx in _expenseTransactions)
                     {

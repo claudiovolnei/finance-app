@@ -336,6 +336,43 @@ body {
     letter-spacing: -0.01em;
 }
 
+
+
+.management-page .transaction-title {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.management-page .transaction-group-title {
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.management-page .transaction-group-title-income {
+    color: #2e7d32;
+}
+
+.management-page .transaction-group-title-income::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #2e7d32;
+}
+
+.management-page .transaction-group-title-expense {
+    color: #c62828;
+}
+
+.management-page .transaction-group-title-expense::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #c62828;
+}
 .entity-page-header {
     margin-top: 0.9rem;
     margin-bottom: 1rem;
