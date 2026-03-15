@@ -57,7 +57,7 @@
                         <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", item.Value)</div>
                     </div>
                     <div class="bar-bg">
-                        <div class="bar" style="width:@item.Percentage%;background:#2e7d32"></div>
+                        <div class="bar" style="width:@FormatPercentage(item.Percentage);background:#2e7d32"></div>
                     </div>
                 </div>
             }
@@ -77,7 +77,7 @@
                         <div class="amount">@string.Format(new CultureInfo("pt-BR"), "{0:C}", item.Value)</div>
                     </div>
                     <div class="bar-bg">
-                        <div class="bar" style="width:@item.Percentage%;background:#c62828"></div>
+                        <div class="bar" style="width:@FormatPercentage(item.Percentage);background:#c62828"></div>
                     </div>
                 </div>
             }
@@ -92,5 +92,11 @@
             return;
 
         await OnCategoryClick.InvokeAsync(new CategoryChartSelection(categoryId, label, type));
+    }
+
+    private static string FormatPercentage(double percentage)
+    {
+        var safeValue = Math.Clamp(percentage, 0d, 100d);
+        return $"{safeValue.ToString("0.##", CultureInfo.InvariantCulture)}%";
     }
 }
