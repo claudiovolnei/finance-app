@@ -293,8 +293,18 @@
             _chartLabels = dto.Categories.Select(c => c.Name).ToArray();
             _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
             var totalIncome = dto.TotalIncome;
+            var totalExpense = dto.TotalExpense;
             _chartPercentages = dto.Categories
-                .Select(c => totalIncome <= 0 ? 0d : (double)(c.Amount / totalIncome * 100m))
+                .Select(c =>
+                {
+                    var totalByType = c.Type == TransactionType.Income ? totalIncome : totalExpense;
+                    if (totalByType <= 0)
+                    {
+                        return 0d;
+                    }
+
+                    return (double)(c.Amount / totalByType * 100m);
+                })
                 .ToArray();
             _chartTypes = dto.Categories.Select(c => c.Type).ToArray();
             _latestIncomeTransactions = dto.LatestTransactions

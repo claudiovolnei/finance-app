@@ -345,7 +345,7 @@ body {
 
 .management-page .transaction-group-title {
     font-weight: 700;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.4rem;
 }
