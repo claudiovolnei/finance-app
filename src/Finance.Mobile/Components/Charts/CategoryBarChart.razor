@@ -31,9 +31,17 @@
             Percentages.Length > i ? Percentages[i] : 0.0,
             Types.Length > i ? Types[i] : TransactionType.Expense));
 
-    private List<CategoryChartItem> IncomeItems => ChartItems.Where(x => x.Type == TransactionType.Income).ToList();
+    private List<CategoryChartItem> IncomeItems => ChartItems
+        .Where(x => x.Type == TransactionType.Income)
+        .OrderByDescending(x => x.Value)
+        .ThenBy(x => x.Label)
+        .ToList();
 
-    private List<CategoryChartItem> ExpenseItems => ChartItems.Where(x => x.Type == TransactionType.Expense).ToList();
+    private List<CategoryChartItem> ExpenseItems => ChartItems
+        .Where(x => x.Type == TransactionType.Expense)
+        .OrderByDescending(x => x.Value)
+        .ThenBy(x => x.Label)
+        .ToList();
 }
 
 <div class="category-chart">

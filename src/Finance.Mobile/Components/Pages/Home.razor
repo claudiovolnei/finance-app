@@ -104,47 +104,49 @@
     </MudGrid>
 </MudContainer>
 
-@if (_isExpenseDetailOpen)
+@if (_isCategoryPanelVisible)
 {
-    <MudOverlay Visible="true" AutoClose="true" OnClosed="CloseCategoryExpenseDialog">
-        <MudPaper Class="pa-4 mx-4 my-8" Style="max-width:720px; width:100%; margin:auto;">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
-                <MudText Typo="Typo.h6">@_categoryDialogTitle</MudText>
-                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCategoryExpenseDialog" />
-            </MudStack>
-            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">Total no mês: <span style="color:@(_categoryDialogType == TransactionType.Income ? "#2e7d32" : "#c62828")">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _categoryDialogTotal)</span></MudText>
+    <div class="transaction-detail-overlay" @onclick="CloseCategoryExpenseDialogAsync">
+        <MudPaper Class="@GetCategoryPanelClass()" Elevation="6" @onclick:stopPropagation="true">
+            <MudStack Spacing="3">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-2">
+                    <MudText Typo="Typo.h6">@_categoryDialogTitle</MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="CloseCategoryExpenseDialogAsync" />
+                </MudStack>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">Total no mês: <span style="color:@(_categoryDialogType == TransactionType.Income ? "#2e7d32" : "#c62828")">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _categoryDialogTotal)</span></MudText>
 
-            @if (!_categoryDialogTransactions.Any())
-            {
-                <MudAlert Severity="Severity.Info" Dense="true">Nenhum lançamento nesta categoria no período.</MudAlert>
-            }
-            else
-            {
-                <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
-                    @foreach (var tx in _categoryDialogTransactions)
-                    {
-                        <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                                <MudStack Spacing="0" Style="min-width:0;">
-                                    <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
-                                    <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                @if (!_categoryDialogTransactions.Any())
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true">Nenhum lançamento nesta categoria no período.</MudAlert>
+                }
+                else
+                {
+                    <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
+                        @foreach (var tx in _categoryDialogTransactions)
+                        {
+                            <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                                    <MudStack Spacing="0" Style="min-width:0;">
+                                        <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                                        <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                                    </MudStack>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
+                                            @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
+                                        </MudChip>
+                                        <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
+                                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
+                                        </MudText>
+                                    </MudStack>
                                 </MudStack>
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                    <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
-                                        @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
-                                    </MudChip>
-                                    <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
-                                        @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
-                                    </MudText>
-                                </MudStack>
-                            </MudStack>
-                        </MudListItem>
-                        <MudDivider />
-                    }
-                </MudList>
-            }
+                            </MudListItem>
+                            <MudDivider />
+                        }
+                    </MudList>
+                }
+            </MudStack>
         </MudPaper>
-    </MudOverlay>
+    </div>
 }
 
 @if (_isTransactionPanelVisible && _selectedTransaction is not null)
@@ -228,7 +230,8 @@
     private TransactionType[] _chartTypes = Array.Empty<TransactionType>();
     private List<TransactionSummaryDto> _latestIncomeTransactions = new();
     private List<TransactionSummaryDto> _latestExpenseTransactions = new();
-    private bool _isExpenseDetailOpen;
+    private bool _isCategoryDialogOpen;
+    private bool _isCategoryPanelVisible;
     private string _categoryDialogTitle = "";
     private decimal _categoryDialogTotal;
     private List<TransactionSummaryDto> _categoryDialogTransactions = new();
@@ -377,7 +380,8 @@
                 .OrderBy(t => t.Date)
                 .ThenBy(t => t.Id)
                 .ToList();
-            _isExpenseDetailOpen = true;
+            _isCategoryPanelVisible = true;
+            _isCategoryDialogOpen = true;
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -386,12 +390,19 @@
         }
     }
 
-    private Task CloseCategoryExpenseDialog()
+    private async Task CloseCategoryExpenseDialogAsync()
     {
-        _isExpenseDetailOpen = false;
+        _isCategoryDialogOpen = false;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(TransactionPanelAnimationMs);
+        _isCategoryPanelVisible = false;
         _categoryDialogTransactions = new();
-        return Task.CompletedTask;
     }
+
+    private string GetCategoryPanelClass() =>
+        _isCategoryDialogOpen
+            ? "transaction-detail-dialog transaction-detail-dialog-open"
+            : "transaction-detail-dialog transaction-detail-dialog-close";
 
     public void Dispose()
     {
