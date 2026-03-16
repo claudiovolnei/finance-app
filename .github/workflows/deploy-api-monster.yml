@@ -36,6 +36,8 @@ jobs:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
           ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
+          $ErrorActionPreference = 'Stop'
+
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
           }
@@ -94,12 +96,18 @@ jobs:
             --context AppDbContext `
             --connection "$env:FINANCE_DB_CONNECTION"
 
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef database update' failed with exit code $LASTEXITCODE."
+          }
+
       - name: Validate no pending migrations after update
         shell: pwsh
         env:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
           ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
+          $ErrorActionPreference = 'Stop'
+
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
           }
@@ -109,6 +117,10 @@ jobs:
             --startup-project src/Finance.Api/Finance.Api.csproj `
             --context AppDbContext `
             --connection "$env:FINANCE_DB_CONNECTION"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef migrations list' failed with exit code $LASTEXITCODE."
+          }
 
           Write-Host $migrationsOutput
 
