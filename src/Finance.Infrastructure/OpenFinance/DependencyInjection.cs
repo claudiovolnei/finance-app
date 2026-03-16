@@ -24,6 +24,8 @@ public static class DependencyInjection
 
         services.AddScoped<IPluggyAuthService, PluggyAuthService>();
         services.AddScoped<IPluggyService, PluggyService>();
+        services.AddScoped<IOpenFinanceCategorizationService, OpenFinanceCategorizationService>();
+        services.AddScoped<IPluggyConnectorResolver, PluggyConnectorResolver>();
         services.AddScoped<IPluggySyncService, PluggySyncService>();
         services.AddHostedService<PluggyTransactionSyncWorker>();
 

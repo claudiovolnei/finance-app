@@ -9,6 +9,10 @@ on:
 jobs:
   deploy:
     runs-on: windows-latest
+    env:
+      FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
+      ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
+      Jwt__Key: ${{ secrets.JWT_KEY }}
 
     steps:
 
@@ -32,14 +36,15 @@ jobs:
 
       - name: Validate migration history and apply pending migrations
         shell: pwsh
-        env:
-          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
-          ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
           }
 
           $dbMigrationsRaw = @()
@@ -102,14 +107,15 @@ jobs:
 
       - name: Validate no pending migrations after update
         shell: pwsh
-        env:
-          FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
-          ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
           }
 
           $migrationsOutput = dotnet ef migrations list `
