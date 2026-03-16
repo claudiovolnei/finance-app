@@ -11,6 +11,7 @@ public static class WebApplicationExtensions
         app.MapAccountEndpoints();
         app.MapDashboardEndpoints();
         app.MapAuthEndpoints();
+        app.MapOpenFinanceEndpoints();
 
         return app;
     }
