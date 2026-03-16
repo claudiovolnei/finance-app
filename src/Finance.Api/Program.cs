@@ -10,7 +10,6 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text.Json;
 using ElmahCore.Mvc;
-using Finance.Infrastructure.OpenFinance;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -105,9 +104,6 @@ builder.Services.AddAuthentication(options =>
 
 // Add authorization services
 builder.Services.AddAuthorization();
-
-// Open Finance (Pluggy)
-builder.Services.AddOpenFinanceIntegration(builder.Configuration);
 
 // Simple health checks registration
 builder.Services.AddHealthChecks();
