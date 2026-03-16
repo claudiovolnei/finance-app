@@ -35,11 +35,16 @@ jobs:
         env:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
           ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
+          Jwt__Key: ${{ secrets.JWT_KEY }}
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
           }
 
           $dbMigrationsRaw = @()
@@ -105,11 +110,16 @@ jobs:
         env:
           FINANCE_DB_CONNECTION: ${{ secrets.FINANCE_DB_CONNECTION }}
           ConnectionStrings__FinanceDb: ${{ secrets.FINANCE_DB_CONNECTION }}
+          Jwt__Key: ${{ secrets.JWT_KEY }}
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
           }
 
           $migrationsOutput = dotnet ef migrations list `
