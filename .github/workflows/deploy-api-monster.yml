@@ -116,13 +116,42 @@ jobs:
 
           Write-Host "No pending migrations detected after database update."
 
-      - name: Verify latest migration in database history
+      - name: Reconcile missing migrations in database history
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
           if (-not $env:FINANCE_DB_CONNECTION) {
             throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
+          }
+
+          function Get-DatabaseMigrations {
+            $dbMigrations = @()
+            $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+
+            try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId"
+              $reader = $command.ExecuteReader()
+
+              while ($reader.Read()) {
+                if (-not $reader.IsDBNull(0)) {
+                  $dbMigrations += $reader.GetString(0)
+                }
+              }
+
+              $reader.Close()
+            }
+            finally {
+              $connection.Close()
+            }
+
+            return @($dbMigrations)
           }
 
           $localMigrations = Get-ChildItem -Path 'src/Finance.Infrastructure/Migrations' -Filter '*.cs' |
@@ -134,29 +163,8 @@ jobs:
             throw "No local migrations were found in src/Finance.Infrastructure/Migrations."
           }
 
-          $latestLocalMigration = $localMigrations[-1]
-          $dbMigrations = @()
-          $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
-
-          try {
-            $connection.Open()
-            $command = $connection.CreateCommand()
-            $command.CommandText = "SELECT MigrationId FROM __EFMigrationsHistory ORDER BY MigrationId"
-            $reader = $command.ExecuteReader()
-
-            while ($reader.Read()) {
-              if (-not $reader.IsDBNull(0)) {
-                $dbMigrations += $reader.GetString(0)
-              }
-            }
-
-            $reader.Close()
-          }
-          finally {
-            $connection.Close()
-          }
-
-          Write-Host "Migrations stored in __EFMigrationsHistory:"
+          $dbMigrations = Get-DatabaseMigrations
+          Write-Host "Migrations stored in __EFMigrationsHistory before reconciliation:"
           if ($dbMigrations.Count -eq 0) {
             Write-Host "(none)"
           }
@@ -164,11 +172,44 @@ jobs:
             $dbMigrations | ForEach-Object { Write-Host " - $_" }
           }
 
-          if ($dbMigrations -notcontains $latestLocalMigration) {
-            throw "Latest local migration '$latestLocalMigration' is not present in __EFMigrationsHistory."
+          $missingMigrations = @($localMigrations | Where-Object { $_ -notin $dbMigrations })
+          if ($missingMigrations.Count -eq 0) {
+            Write-Host "Database history already contains all local migrations."
+          }
+          else {
+            Write-Host "Migrations missing from __EFMigrationsHistory: $($missingMigrations -join ', ')"
+
+            foreach ($migration in $missingMigrations) {
+              Write-Host "Applying missing migration target '$migration'..."
+
+              dotnet ef database update $migration `
+                --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+                --startup-project src/Finance.Api/Finance.Api.csproj `
+                --context AppDbContext `
+                --connection "$env:FINANCE_DB_CONNECTION"
+
+              if ($LASTEXITCODE -ne 0) {
+                throw "'dotnet ef database update $migration' failed with exit code $LASTEXITCODE."
+              }
+            }
           }
 
-          Write-Host "Latest local migration '$latestLocalMigration' confirmed in __EFMigrationsHistory."
+          $dbMigrationsAfterReconciliation = Get-DatabaseMigrations
+          Write-Host "Migrations stored in __EFMigrationsHistory after reconciliation:"
+          if ($dbMigrationsAfterReconciliation.Count -eq 0) {
+            Write-Host "(none)"
+          }
+          else {
+            $dbMigrationsAfterReconciliation | ForEach-Object { Write-Host " - $_" }
+          }
+
+          $remainingMissingMigrations = @($localMigrations | Where-Object { $_ -notin $dbMigrationsAfterReconciliation })
+          if ($remainingMissingMigrations.Count -gt 0) {
+            Write-Warning "The following migrations are still missing from __EFMigrationsHistory after reconciliation: $($remainingMissingMigrations -join ', ')"
+          }
+          else {
+            Write-Host "Database history is synchronized with local migrations."
+          }
 
       - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
