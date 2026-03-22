@@ -43,7 +43,7 @@ public static class AuthEndpoints
         await db.SaveChangesAsync();
 
         // create default account and categories for the user
-        var account = new Account("Conta Principal", 0m, user.Id);
+        var account = new Account("Conta Principal", 0m, user.Id, AccountType.Checking);
         await accountRepo.AddAsync(account);
 
         return Results.Ok(new { message = "User registered" });

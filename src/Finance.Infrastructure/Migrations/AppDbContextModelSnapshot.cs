@@ -40,10 +40,18 @@ namespace Finance.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ParentAccountId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentAccountId");
 
                     b.ToTable("Accounts");
                 });
@@ -62,7 +70,6 @@ namespace Finance.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -92,9 +99,6 @@ namespace Finance.Infrastructure.Migrations
                     b.Property<int?>("CategoryId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("TransferAccountId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -104,6 +108,9 @@ namespace Finance.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TransferAccountId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -116,14 +123,6 @@ namespace Finance.Infrastructure.Migrations
                     b.HasIndex("TransferAccountId");
 
                     b.ToTable("Transactions");
-                });
-
-            modelBuilder.Entity("Finance.Domain.Entities.Transaction", b =>
-                {
-                    b.HasOne("Finance.Domain.Entities.Account", null)
-                        .WithMany()
-                        .HasForeignKey("TransferAccountId")
-                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Finance.Domain.Entities.User", b =>
@@ -152,6 +151,22 @@ namespace Finance.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Finance.Domain.Entities.Account", b =>
+                {
+                    b.HasOne("Finance.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("ParentAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Finance.Domain.Entities.Transaction", b =>
+                {
+                    b.HasOne("Finance.Domain.Entities.Account", null)
+                        .WithMany()
+                        .HasForeignKey("TransferAccountId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 #pragma warning restore 612, 618
         }

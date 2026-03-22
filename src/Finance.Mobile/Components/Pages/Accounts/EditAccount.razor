@@ -20,23 +20,43 @@
     else
     {
         <MudForm>
-            <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
-            <MudNumericField Label="Saldo inicial" @bind-Value="_initialBalance" Variant="Variant.Outlined" Required="true" Min="0" Adornment="Adornment.Start" AdornmentText="R$" />
+            <MudStack Spacing="2">
+                <MudTextField Label="Nome" @bind-Value="_name" Variant="Variant.Outlined" Required="true" />
 
-            <MudButtonGroup Class="mt-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
-                    @if (_saving)
-                    {
-                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                        <MudText Class="ms-2">Salvando...</MudText>
-                    }
-                    else
-                    {
-                        <MudText>Salvar</MudText>
-                    }
-                </MudButton>
-                <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
-            </MudButtonGroup>
+                <MudSelect T="AccountType" Label="Tipo de conta" @bind-Value="_type" Variant="Variant.Outlined">
+                    <MudSelectItem Value="AccountType.Checking">Conta corrente</MudSelectItem>
+                    <MudSelectItem Value="AccountType.CreditCard">Cartão de crédito</MudSelectItem>
+                </MudSelect>
+
+                @if (_type == AccountType.CreditCard)
+                {
+                    <MudSelect T="int?" Label="Conta corrente vinculada" @bind-Value="_parentAccountId" Variant="Variant.Outlined" Required="true">
+                        @foreach (var account in AvailableParentAccounts)
+                        {
+                            <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudNumericField Label="Saldo inicial" @bind-Value="_initialBalance" Variant="Variant.Outlined" Required="true" Min="0" Adornment="Adornment.Start" AdornmentText="R$" />
+                }
+
+                <MudButtonGroup Class="mt-4">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@_saving">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Salvando...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Salvar</MudText>
+                        }
+                    </MudButton>
+                    <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancelar">Cancelar</MudButton>
+                </MudButtonGroup>
+            </MudStack>
         </MudForm>
     }
 
@@ -50,12 +70,17 @@
     [Parameter] public int Id { get; set; }
 
     private Account? _account;
+    private List<Account> _allAccounts = new();
     private string _name = string.Empty;
     private decimal _initialBalance;
+    private AccountType _type = AccountType.Checking;
+    private int? _parentAccountId;
     private string _message = string.Empty;
     private Severity _alertSeverity = Severity.Info;
     private bool _loading = true;
     private bool _saving;
+
+    private IEnumerable<Account> AvailableParentAccounts => _allAccounts.Where(a => a.Type == AccountType.Checking && a.Id != Id).OrderBy(a => a.Name);
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +92,7 @@
         }
 
         ApiClient.SetBearerToken(token);
+        _allAccounts = await ApiClient.GetAccountsAsync();
         await LoadAccount();
     }
 
@@ -80,6 +106,8 @@
             {
                 _name = _account.Name;
                 _initialBalance = _account.InitialBalance;
+                _type = _account.Type;
+                _parentAccountId = _account.ParentAccountId;
             }
         }
         catch (Exception ex)
@@ -102,10 +130,17 @@
             return;
         }
 
+        if (_type == AccountType.CreditCard && !_parentAccountId.HasValue)
+        {
+            _message = "Selecione a conta corrente vinculada ao cartão.";
+            _alertSeverity = Severity.Warning;
+            return;
+        }
+
         try
         {
             _saving = true;
-            await ApiClient.UpdateAccountAsync(Id, _name.Trim(), _initialBalance);
+            await ApiClient.UpdateAccountAsync(Id, _name.Trim(), _initialBalance, _type, _type == AccountType.CreditCard ? _parentAccountId : null);
             _message = "Conta atualizada com sucesso!";
             _alertSeverity = Severity.Success;
             await Task.Delay(800);

@@ -4,14 +4,20 @@ namespace Finance.Mobile.Services;
 
 public class AccountSelectionState
 {
+    public IReadOnlyList<Account> AllAccounts { get; private set; } = Array.Empty<Account>();
     public IReadOnlyList<Account> Accounts { get; private set; } = Array.Empty<Account>();
     public int? SelectedAccountId { get; private set; }
 
     public event Action? OnChange;
 
+    public IEnumerable<Account> CreditCardsForSelectedAccount => SelectedAccountId.HasValue
+        ? AllAccounts.Where(a => a.Type == AccountType.CreditCard && a.ParentAccountId == SelectedAccountId.Value)
+        : Enumerable.Empty<Account>();
+
     public void SetAccounts(IReadOnlyList<Account> accounts)
     {
-        Accounts = accounts;
+        AllAccounts = accounts;
+        Accounts = accounts.Where(a => a.Type == AccountType.Checking).OrderBy(a => a.Name).ToList();
 
         if (Accounts.Count == 0)
         {

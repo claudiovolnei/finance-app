@@ -9,14 +9,14 @@
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page transfer-form-page">
     <MudStack Spacing="1" Class="mb-2">
         <MudText Typo="Typo.h5" Class="list-page-title">Novo lançamento</MudText>
-        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">Preencha os dados e escolha entre lançamento comum ou transferência entre contas.</MudText>
+        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">Escolha se o lançamento será feito na conta corrente selecionada ou em um cartão vinculado.</MudText>
     </MudStack>
 
     <MudPaper Elevation="0" Class="transfer-mode-card mb-4">
         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
             <MudStack Spacing="0">
                 <MudText Typo="Typo.subtitle2">Modo do lançamento</MudText>
-                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_isTransfer ? "Transferência entre contas" : "Receita/Despesa com categoria")</MudText>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_isTransfer ? "Transferência entre contas correntes" : GetPostingDescription())</MudText>
             </MudStack>
             <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="Transferência" />
         </MudStack>
@@ -34,38 +34,30 @@
                         </MudSelect>
                     </MudItem>
                     <MudItem xs="12" sm="6">
-                        <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Disabled="@(!_availableAccounts.Any())">
-                            @foreach (var account in _availableAccounts)
+                        <MudSelect T="int" Label="Conta de transferência" Value="_transferAccountId" ValueChanged="OnTransferAccountChanged" Variant="Variant.Outlined" Required="true" Disabled="@(!_availableTransferAccounts.Any())">
+                            @foreach (var account in _availableTransferAccounts)
                             {
                                 <MudSelectItem Value="@account.Id">@account.Name</MudSelectItem>
                             }
                         </MudSelect>
                     </MudItem>
                 </MudGrid>
-
-                @if (!_availableAccounts.Any())
-                {
-                    <MudAlert Severity="Severity.Warning" Dense="true" Variant="Variant.Outlined" Class="mt-3">
-                        Você precisa de ao menos duas contas para realizar transferências.
-                    </MudAlert>
-                }
-                else
-                {
-                    <MudPaper Elevation="0" Class="selected-account-balance mt-3">
-                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Saldo da conta selecionada</MudText>
-                        <MudText Typo="Typo.h6" Class="@GetBalanceClass(_selectedTransferAccountBalance)">
-                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransferAccountBalance)
-                        </MudText>
-                    </MudPaper>
-                }
             </MudPaper>
         }
         else
         {
             <MudPaper Elevation="0" Class="transfer-section-card mb-4">
                 <MudGrid>
+                    <MudItem xs="12">
+                        <MudSelect T="int" Label="Lançar em" Value="_postingAccountId" ValueChanged="OnPostingAccountChanged" Variant="Variant.Outlined" Required="true">
+                            @foreach (var option in _postingAccountOptions)
+                            {
+                                <MudSelectItem Value="@option.Id">@option.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
                     <MudItem xs="12" sm="6">
-                        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true">
+                        <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true" Disabled="@IsCreditCardPosting">
                             <MudSelectItem Value="TransactionType.Income">Receita</MudSelectItem>
                             <MudSelectItem Value="TransactionType.Expense">Despesa</MudSelectItem>
                         </MudSelect>
@@ -86,14 +78,20 @@
                                          Disabled="@(!_categories.Any())" />
                     </MudItem>
                 </MudGrid>
+
+                @if (IsCreditCardPosting)
+                {
+                    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mt-3">
+                        Gastos em cartão são lançados sempre como despesa e aparecerão vinculados à conta corrente selecionada.
+                    </MudAlert>
+                }
             </MudPaper>
         }
 
         <MudPaper Elevation="0" Class="transfer-section-card">
             <MudGrid>
                 <MudItem xs="12" sm="6">
-                    <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true"
-                                  Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
+                    <MudTextField Label="Valor" @bind-Value="_amountText" Variant="Variant.Outlined" Required="true" Adornment="Adornment.Start" AdornmentText="R$" @onblur="FormatAmount" @oninput="OnAmountInput" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudDatePicker Label="Data" Date="@_date" DateChanged="(date) => _date = date ?? DateTime.Now" Variant="Variant.Outlined" Required="true" />
@@ -105,7 +103,7 @@
         </MudPaper>
 
         <MudStack Row="true" Spacing="1" Class="mt-4">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@(_saving || (_isTransfer && !_availableAccounts.Any()))">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Salvar" Disabled="@(_saving || (_isTransfer && !_availableTransferAccounts.Any()))">
                 @if (_saving)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
@@ -132,11 +130,13 @@
     [Inject] public AccountSelectionState AccountState { get; set; } = default!;
 
     private List<Category> _categories = new();
-    private List<Account> _availableAccounts = new();
+    private List<Category> _allCategories = new();
+    private List<Account> _postingAccountOptions = new();
+    private List<Account> _availableTransferAccounts = new();
     private int _categoryId;
     private Category? _selectedCategory;
+    private int _postingAccountId;
     private int _transferAccountId;
-    private decimal _selectedTransferAccountBalance;
     private decimal _amount;
     private string _amountText = "0,00";
     private DateTime _date = DateTime.Now;
@@ -149,6 +149,8 @@
     private bool _saving;
     private int _categoryAutocompleteKey;
 
+    private bool IsCreditCardPosting => _postingAccountOptions.FirstOrDefault(a => a.Id == _postingAccountId)?.Type == AccountType.CreditCard;
+
     protected override async Task OnInitializedAsync()
     {
         var token = await TokenService.GetTokenAsync();
@@ -158,36 +160,51 @@
             return;
         }
 
-        await LoadCategories();
-        await LoadTransferAccounts();
+        ApiClient.SetBearerToken(token);
+        await LoadInitialDataAsync();
+    }
+
+    private async Task LoadInitialDataAsync()
+    {
+        var accounts = AccountState.AllAccounts.Any() ? AccountState.AllAccounts.ToList() : await ApiClient.GetAccountsAsync();
+        var selectedCheckingAccountId = AccountState.SelectedAccountId ?? accounts.FirstOrDefault(a => a.Type == AccountType.Checking)?.Id ?? 0;
+        _postingAccountOptions = accounts.Where(a => a.Id == selectedCheckingAccountId || (a.Type == AccountType.CreditCard && a.ParentAccountId == selectedCheckingAccountId)).OrderBy(a => a.Type).ThenBy(a => a.Name).ToList();
+        _postingAccountId = _postingAccountOptions.FirstOrDefault()?.Id ?? selectedCheckingAccountId;
+        _availableTransferAccounts = accounts.Where(a => a.Type == AccountType.Checking && a.Id != selectedCheckingAccountId).OrderBy(a => a.Name).ToList();
+        _transferAccountId = _availableTransferAccounts.FirstOrDefault()?.Id ?? 0;
+        _allCategories = await ApiClient.GetCategoriesAsync();
+        await RefreshCategoriesAsync();
+    }
+
+    private async Task OnPostingAccountChanged(int value)
+    {
+        _postingAccountId = value;
+        if (IsCreditCardPosting)
+            _type = TransactionType.Expense;
+
+        await RefreshCategoriesAsync();
     }
 
     private async Task OnTypeChanged(TransactionType value)
     {
-        if (_type == value)
-            return;
-
         _type = value;
-        _selectedCategory = null;
-        _categoryId = 0;
-        _categoryAutocompleteKey++;
-        await LoadCategories();
+        await RefreshCategoriesAsync();
     }
 
-    private async Task LoadCategories()
+    private Task OnTransferAccountChanged(int value)
     {
-        _categories = (await ApiClient.GetCategoriesAsync())
-            .Where(c => c.Type == _type)
-            .ToList();
+        _transferAccountId = value;
+        return Task.CompletedTask;
+    }
 
-        if (_selectedCategory is not null)
-        {
-            _selectedCategory = _categories.FirstOrDefault(c => c.Id == _selectedCategory.Id);
-        }
-
-        _selectedCategory ??= _categories.FirstOrDefault();
-
+    private async Task RefreshCategoriesAsync()
+    {
+        var effectiveType = IsCreditCardPosting ? TransactionType.Expense : _type;
+        _categories = _allCategories.Where(c => c.Type == effectiveType).ToList();
+        _selectedCategory = _categories.FirstOrDefault(c => c.Id == _selectedCategory?.Id) ?? _categories.FirstOrDefault();
         _categoryId = _selectedCategory?.Id ?? 0;
+        _categoryAutocompleteKey++;
+        await InvokeAsync(StateHasChanged);
     }
 
     private Task<IEnumerable<Category>> SearchCategories(string value, CancellationToken cancellationToken)
@@ -195,8 +212,7 @@
         if (string.IsNullOrWhiteSpace(value))
             return Task.FromResult<IEnumerable<Category>>(_categories);
 
-        var filtered = _categories.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
-        return Task.FromResult<IEnumerable<Category>>(filtered);
+        return Task.FromResult<IEnumerable<Category>>(_categories.Where(c => c.Name.Contains(value, StringComparison.OrdinalIgnoreCase)));
     }
 
     private Task OnCategoryChanged(Category? category)
@@ -206,58 +222,25 @@
         return Task.CompletedTask;
     }
 
-    private async Task LoadTransferAccounts()
-    {
-        var currentAccountId = AccountState.SelectedAccountId ?? 0;
-        var accounts = await ApiClient.GetAccountsAsync();
-        _availableAccounts = accounts.Where(a => a.Id != currentAccountId).ToList();
-
-        if (_availableAccounts.Any())
-        {
-            _transferAccountId = _availableAccounts.First().Id;
-            await LoadSelectedTransferAccountBalance();
-        }
-    }
-
-    private async Task OnTransferAccountChanged(int value)
-    {
-        _transferAccountId = value;
-        await LoadSelectedTransferAccountBalance();
-    }
-
-    private async Task LoadSelectedTransferAccountBalance()
-    {
-        var account = await ApiClient.GetAccountByIdAsync(_transferAccountId);
-        if (account is null)
-        {
-            _selectedTransferAccountBalance = 0;
-            return;
-        }
-
-        var tx = await ApiClient.GetTransactionsAsync(accountId: _transferAccountId);
-        var delta = tx.Sum(t => t.Type == TransactionType.Income ? t.Amount : -t.Amount);
-        _selectedTransferAccountBalance = account.InitialBalance + delta;
-    }
-
     private async Task Salvar()
     {
         if (!_isTransfer && _categoryId == 0)
         {
-            _message = "Selecione uma categoria";
+            _message = "Selecione uma categoria.";
             _alertSeverity = Severity.Warning;
             return;
         }
 
         if (_isTransfer && _transferAccountId == 0)
         {
-            _message = "Selecione a conta para transferência";
+            _message = "Selecione a conta para transferência.";
             _alertSeverity = Severity.Warning;
             return;
         }
 
         if (!decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var parsedAmount))
         {
-            _message = "Valor inválido";
+            _message = "Valor inválido.";
             _alertSeverity = Severity.Error;
             return;
         }
@@ -268,15 +251,13 @@
         {
             _saving = true;
             await ApiClient.CreateTransactionAsync(
-                AccountState.SelectedAccountId ?? 0,
+                _isTransfer ? (AccountState.SelectedAccountId ?? 0) : _postingAccountId,
                 _isTransfer ? null : _categoryId,
                 _isTransfer ? _transferAccountId : null,
                 _amount,
                 _date,
                 _description ?? string.Empty,
-                _isTransfer
-                    ? (_transferDirection == TransferDirection.Send ? TransactionType.Expense : TransactionType.Income)
-                    : _type);
+                _isTransfer ? (_transferDirection == TransferDirection.Send ? TransactionType.Expense : TransactionType.Income) : (IsCreditCardPosting ? TransactionType.Expense : _type));
 
             _message = "Lançamento criado com sucesso!";
             _alertSeverity = Severity.Success;
@@ -294,14 +275,14 @@
         }
     }
 
-    private void Cancelar() => Navigation.NavigateTo("/transactions");
+    private string GetPostingDescription() => IsCreditCardPosting ? "Despesa lançada em cartão vinculado" : "Receita/Despesa na conta corrente selecionada";
 
-    private static string GetBalanceClass(decimal value) => value >= 0 ? "transfer-balance-positive" : "transfer-balance-negative";
+    private void Cancelar() => Navigation.NavigateTo("/transactions");
 
     private void FormatAmount(FocusEventArgs _)
     {
-        if (decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var v))
-            _amountText = v.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+        if (decimal.TryParse(_amountText, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.GetCultureInfo("pt-BR"), out var value))
+            _amountText = value.ToString("N2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
     }
 
     private void OnAmountInput(ChangeEventArgs e)

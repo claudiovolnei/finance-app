@@ -1,7 +1,7 @@
 using Finance.Api.Endpoints.Dtos;
 using Finance.Application.Repositories;
 using Finance.Application.UseCases;
-using Finance.Infrastructure.Repositories;
+using Finance.Domain.Entities;
 
 namespace Finance.Api.Endpoints;
 
@@ -16,20 +16,13 @@ public static class TransactionEndpoints
         group.MapGet("/", GetAllTransactions)
             .WithName("GetAllTransactions")
             .WithSummary("Lista todas as transações")
-            .Produces<List<Finance.Domain.Entities.Transaction>>()
-            .AddEndpointFilter(async (context, next) =>
-            {
-                // allow parsing of optional query params year and month
-                return await next(context);
-            });
+            .Produces<List<TransactionResponseDto>>();
 
         group.MapGet("/{id:int}", GetTransactionById)
             .WithName("GetTransactionById")
             .WithSummary("Busca uma transação por ID")
-            .Produces<Finance.Domain.Entities.Transaction>()
+            .Produces<TransactionResponseDto>()
             .Produces(404);
-        
-        // Support optional year/month as query parameters via same endpoint (query string)
 
         group.MapPost("/", CreateTransaction)
             .WithName("CreateTransaction")
@@ -54,81 +47,53 @@ public static class TransactionEndpoints
 
     private static async Task<IResult> GetAllTransactions(HttpContext httpContext, ITransactionRepository repository, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int? year = null, int? month = null, int? accountId = null)
     {
-        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        int userId = 0;
-        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
-            userId = parsed;
-
+        var userId = GetUserId(httpContext);
         var transactions = await repository.GetByUserIdAsync(userId, year, month, accountId);
-        // fetch categories for the user to map names
         var categories = await categoryRepo.GetByUserIdAsync(userId);
         var accounts = await accountRepository.GetByUserIdAsync(userId);
-        var catMap = categories.ToDictionary(c => c.Id, c => c.Name);
-        var dtos = transactions.Select(t => new Dtos.TransactionResponseDto(
-            t.Id,
-            t.AccountId,
-            t.CategoryId,
-            t.TransferAccountId,
-            t.TransferAccountId.HasValue && accounts.FirstOrDefault(a => a.Id == t.TransferAccountId.Value) is var acc && acc != null ? acc.Name : "N/A",
-            t.CategoryId.HasValue && catMap.TryGetValue(t.CategoryId.Value, out var n) ? n : "Transferência",
-            t.Amount,
-            t.Date,
-            t.Description,
-            t.Type)).OrderByDescending(o => o.Date).ToList();
+        var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+        var accountMap = accounts.ToDictionary(a => a.Id);
+
+        var dtos = transactions
+            .Select(t => MapTransactionDto(t, categoryMap, accountMap))
+            .OrderByDescending(o => o.Date)
+            .ThenByDescending(o => o.Id)
+            .ToList();
+
         return Results.Ok(dtos);
     }
 
     private static async Task<IResult> GetTransactionById(HttpContext httpContext, int id, ITransactionRepository repository, ICategoryRepository categoryRepo, IAccountRepository accountRepository)
     {
         var transaction = await repository.GetByIdAsync(id);
-        if (transaction == null) return Results.NotFound();
+        if (transaction == null)
+            return Results.NotFound();
 
-        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        int userId = 0;
-        if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
-            userId = parsed;
-
+        var userId = GetUserId(httpContext);
         if (transaction.UserId != userId)
             return Results.Forbid();
 
-        var category = transaction.CategoryId.HasValue ? await categoryRepo.GetByIdAsync(transaction.CategoryId.Value) : null;
-        var account = transaction.TransferAccountId.HasValue ? await accountRepository.GetByIdAsync(transaction.TransferAccountId.Value) : null;
+        var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
+        var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+        var accountMap = accounts.ToDictionary(a => a.Id);
 
-        var dto = new Dtos.TransactionResponseDto(
-            transaction.Id,
-            transaction.AccountId,
-            transaction.CategoryId,
-            transaction.TransferAccountId,
-            transaction.TransferAccountId.HasValue && account != null ? account.Name : "N/A",
-            category?.Name ?? "Transferência",
-            transaction.Amount,
-            transaction.Date,
-            transaction.Description,
-            transaction.Type);
-        return Results.Ok(dto);
+        return Results.Ok(MapTransactionDto(transaction, categoryMap, accountMap));
     }
 
-    private static async Task<IResult> CreateTransaction(
-        HttpContext httpContext,
-        CreateTransactionUseCase useCase,
-        CreateTransactionRequest request)
+    private static async Task<IResult> CreateTransaction(HttpContext httpContext, CreateTransactionUseCase useCase, CreateTransactionRequest request)
     {
         try
         {
-            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            int userId = 0;
-            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
-                userId = parsed;
-
             await useCase.ExecuteAsync(
                 request.AccountId,
                 request.CategoryId,
                 request.TransferAccountId,
                 request.Amount,
                 request.Date,
-                request.Description ?? "",
+                request.Description ?? string.Empty,
                 request.Type,
-                userId);
+                GetUserId(httpContext));
 
             return Results.Ok(new { message = "Transaction created successfully" });
         }
@@ -138,19 +103,10 @@ public static class TransactionEndpoints
         }
     }
 
-    private static async Task<IResult> UpdateTransaction(
-        HttpContext httpContext,
-        int id,
-        UpdateTransactionUseCase useCase,
-        UpdateTransactionRequest request)
+    private static async Task<IResult> UpdateTransaction(HttpContext httpContext, int id, UpdateTransactionUseCase useCase, UpdateTransactionRequest request)
     {
         try
         {
-            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            int userId = 0;
-            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
-                userId = parsed;
-
             await useCase.ExecuteAsync(
                 id,
                 request.AccountId,
@@ -158,9 +114,9 @@ public static class TransactionEndpoints
                 request.TransferAccountId,
                 request.Amount,
                 request.Date,
-                request.Description ?? "",
+                request.Description ?? string.Empty,
                 request.Type,
-                userId);
+                GetUserId(httpContext));
 
             return Results.Ok(new { message = "Transaction updated successfully" });
         }
@@ -178,19 +134,11 @@ public static class TransactionEndpoints
         }
     }
 
-    private static async Task<IResult> DeleteTransaction(
-        HttpContext httpContext,
-        int id,
-        DeleteTransactionUseCase useCase)
+    private static async Task<IResult> DeleteTransaction(HttpContext httpContext, int id, DeleteTransactionUseCase useCase)
     {
         try
         {
-            var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-            int userId = 0;
-            if (userClaim != null && int.TryParse(userClaim.Value, out var parsed))
-                userId = parsed;
-
-            await useCase.ExecuteAsync(id, userId);
+            await useCase.ExecuteAsync(id, GetUserId(httpContext));
             return Results.Ok(new { message = "Transaction deleted successfully" });
         }
         catch (UnauthorizedAccessException)
@@ -205,5 +153,42 @@ public static class TransactionEndpoints
         {
             return Results.BadRequest(new { error = ex.Message });
         }
+    }
+
+    private static TransactionResponseDto MapTransactionDto(Transaction transaction, IReadOnlyDictionary<int, string> categoryMap, IReadOnlyDictionary<int, Account> accountMap)
+    {
+        accountMap.TryGetValue(transaction.AccountId, out var account);
+        Account? transferAccount = null;
+        if (transaction.TransferAccountId.HasValue)
+            accountMap.TryGetValue(transaction.TransferAccountId.Value, out transferAccount);
+
+        Account? parentAccount = null;
+        if (account?.ParentAccountId is int parentAccountId)
+            accountMap.TryGetValue(parentAccountId, out parentAccount);
+
+        return new TransactionResponseDto(
+            transaction.Id,
+            transaction.AccountId,
+            account?.Name ?? "Conta desconhecida",
+            account?.Type ?? AccountType.Checking,
+            account?.ParentAccountId,
+            parentAccount?.Name,
+            account?.Type == AccountType.CreditCard,
+            transaction.CategoryId,
+            transaction.TransferAccountId,
+            transferAccount?.Name ?? "N/A",
+            transaction.CategoryId.HasValue && categoryMap.TryGetValue(transaction.CategoryId.Value, out var categoryName)
+                ? categoryName
+                : "Transferência",
+            transaction.Amount,
+            transaction.Date,
+            transaction.Description,
+            transaction.Type);
+    }
+
+    private static int GetUserId(HttpContext httpContext)
+    {
+        var userClaim = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        return userClaim != null && int.TryParse(userClaim.Value, out var parsed) ? parsed : 0;
     }
 }

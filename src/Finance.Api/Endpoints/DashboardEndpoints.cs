@@ -30,14 +30,28 @@ public static class DashboardEndpoints
     private static async Task<IResult> GetSummary(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, int? year, int? month, int? accountId)
     {
         var userId = GetUserId(httpContext);
-
         var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
         var categories = await categoryRepo.GetByUserIdAsync(userId);
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+        var accountMap = accounts.ToDictionary(a => a.Id);
 
         var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
         var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
-        var balance = await transactionRepo.GetBalanceTotal(userId, year ?? DateTime.Now.Year, accountId ?? 0);
+        var totalCreditCardDebt = transactions
+            .Where(t => t.Type == TransactionType.Expense && accountMap.TryGetValue(t.AccountId, out var account) && account.Type == AccountType.CreditCard)
+            .Sum(t => t.Amount);
+
+        var currentAccounts = accounts.Where(a => a.Type == AccountType.Checking).ToList();
+        var scopedCurrentAccounts = accountId.HasValue
+            ? currentAccounts.Where(a => a.Id == accountId.Value).ToList()
+            : currentAccounts;
+
+        decimal balance = 0m;
+        foreach (var currentAccount in scopedCurrentAccounts)
+        {
+            balance += await transactionRepo.GetAccountBalanceAsync(userId, currentAccount.Id);
+        }
 
         var categoryTotals = transactions
             .GroupBy(t => new { t.CategoryId, t.Type })
@@ -59,25 +73,33 @@ public static class DashboardEndpoints
             categorySummaries.Add(new CategorySummaryDto(c.CategoryId, name, c.Amount, percent, c.Type));
         }
 
+        var creditCardExpenses = transactions
+            .Where(t => t.Type == TransactionType.Expense && accountMap.TryGetValue(t.AccountId, out var expenseAccount) && expenseAccount.Type == AccountType.CreditCard)
+            .GroupBy(t => t.AccountId)
+            .Select(g => new CreditCardExpenseSummaryDto(g.Key, accountMap[g.Key].Name, g.Sum(t => t.Amount)))
+            .OrderByDescending(x => x.Amount)
+            .ThenBy(x => x.AccountName)
+            .ToList();
+
         var latestTxs = transactions
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.Id)
             .Take(12)
             .ToList();
 
-        var latest = await BuildTransactionSummariesAsync(latestTxs, categoryMap, accountRepository);
+        var latest = BuildTransactionSummaries(latestTxs, categoryMap, accountMap);
 
-        var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, categorySummaries, latest);
-
+        var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, totalCreditCardDebt, categorySummaries, creditCardExpenses, latest);
         return Results.Ok(dto);
     }
-
 
     private static async Task<IResult> GetCategoryTransactions(HttpContext httpContext, ITransactionRepository transactionRepo, ICategoryRepository categoryRepo, IAccountRepository accountRepository, TransactionType type, int? categoryId, int? year, int? month, int? accountId)
     {
         var userId = GetUserId(httpContext);
         var categories = await categoryRepo.GetByUserIdAsync(userId);
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
+        var accountMap = accounts.ToDictionary(a => a.Id);
 
         var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
 
@@ -91,8 +113,7 @@ public static class DashboardEndpoints
             ? categoryName
             : "Transferência";
 
-        var summaries = await BuildTransactionSummariesAsync(filtered, categoryMap, accountRepository);
-
+        var summaries = BuildTransactionSummaries(filtered, categoryMap, accountMap);
         return Results.Ok(new CategoryTransactionsDetailDto(categoryId, title, filtered.Sum(t => t.Amount), type, summaries));
     }
 
@@ -104,6 +125,8 @@ public static class DashboardEndpoints
         if (category is null)
             return Results.NotFound();
 
+        var accounts = await accountRepository.GetByUserIdAsync(userId);
+        var accountMap = accounts.ToDictionary(a => a.Id);
         var transactions = await transactionRepo.GetByUserIdAsync(userId, year, month, accountId);
         var filtered = transactions
             .Where(t => t.Type == TransactionType.Expense && t.CategoryId == categoryId)
@@ -112,32 +135,44 @@ public static class DashboardEndpoints
             .ToList();
 
         var categoryMap = categories.ToDictionary(c => c.Id, c => c.Name);
-        var summaries = await BuildTransactionSummariesAsync(filtered, categoryMap, accountRepository);
-
+        var summaries = BuildTransactionSummaries(filtered, categoryMap, accountMap);
         return Results.Ok(new CategoryExpenseDetailDto(categoryId, category.Name, filtered.Sum(t => t.Amount), summaries));
     }
 
-    private static async Task<List<TransactionSummaryDto>> BuildTransactionSummariesAsync(
-        List<Transaction> transactions,
-        Dictionary<int, string> categoryMap,
-        IAccountRepository accountRepository)
+    private static List<TransactionSummaryDto> BuildTransactionSummaries(List<Transaction> transactions, Dictionary<int, string> categoryMap, IReadOnlyDictionary<int, Account> accountMap)
     {
-        var latest = new List<TransactionSummaryDto>();
-
-        foreach (var t in transactions)
+        return transactions.Select(t =>
         {
-            var categoryName = t.CategoryId.HasValue && categoryMap.TryGetValue(t.CategoryId.Value, out var category) ? category : "Transferência";
-            var accountName = "N/A";
+            accountMap.TryGetValue(t.AccountId, out var account);
+            Account? transferAccount = null;
             if (t.TransferAccountId.HasValue)
-            {
-                var account = await accountRepository.GetByIdAsync(t.TransferAccountId.Value);
-                accountName = account?.Name ?? "N/A";
-            }
+                accountMap.TryGetValue(t.TransferAccountId.Value, out transferAccount);
 
-            latest.Add(new TransactionSummaryDto(t.Id, t.Date, t.Description, t.CategoryId, categoryName, t.Amount, t.Type, accountName));
-        }
+            Account? parentAccount = null;
+            if (account?.ParentAccountId is int parentAccountId)
+                accountMap.TryGetValue(parentAccountId, out parentAccount);
 
-        return latest;
+            var categoryName = t.CategoryId.HasValue && categoryMap.TryGetValue(t.CategoryId.Value, out var category)
+                ? category
+                : "Transferência";
+
+            return new TransactionSummaryDto(
+                t.Id,
+                t.AccountId,
+                account?.Name ?? "Conta desconhecida",
+                account?.Type ?? AccountType.Checking,
+                account?.ParentAccountId,
+                parentAccount?.Name,
+                account?.Type == AccountType.CreditCard,
+                t.CategoryId,
+                categoryName,
+                t.Amount,
+                t.Date,
+                t.Description,
+                t.Type,
+                t.TransferAccountId,
+                transferAccount?.Name ?? "N/A");
+        }).ToList();
     }
 
     private static int GetUserId(HttpContext httpContext)

@@ -74,7 +74,12 @@ public static class AccountEndpoints
             return Results.BadRequest("Nome da conta é obrigatório.");
 
         var userId = GetUserId(httpContext);
-        var account = new Account(request.Name.Trim(), request.InitialBalance, userId);
+        var validationResult = await ValidateAccountRequestAsync(request.Type, request.ParentAccountId, userId, repository);
+        if (validationResult is not null)
+            return validationResult;
+
+        var initialBalance = request.Type == AccountType.CreditCard ? 0m : request.InitialBalance;
+        var account = new Account(request.Name.Trim(), initialBalance, userId, request.Type, request.ParentAccountId);
         await repository.AddAsync(account);
 
         return Results.Created($"/accounts/{account.Id}", account);
@@ -93,7 +98,12 @@ public static class AccountEndpoints
         if (string.IsNullOrWhiteSpace(request.Name))
             return Results.BadRequest("Nome da conta é obrigatório.");
 
-        await repository.UpdateAsync(account, request.Name.Trim(), request.InitialBalance);
+        var validationResult = await ValidateAccountRequestAsync(request.Type, request.ParentAccountId, userId, repository, id);
+        if (validationResult is not null)
+            return validationResult;
+
+        var initialBalance = request.Type == AccountType.CreditCard ? 0m : request.InitialBalance;
+        await repository.UpdateAsync(account, request.Name.Trim(), initialBalance, request.Type, request.ParentAccountId);
         return Results.NoContent();
     }
 
@@ -111,6 +121,31 @@ public static class AccountEndpoints
         return Results.NoContent();
     }
 
-    private sealed record CreateAccountRequest(string Name, decimal InitialBalance);
-    private sealed record UpdateAccountRequest(string Name, decimal InitialBalance);
+    private static async Task<IResult?> ValidateAccountRequestAsync(AccountType type, int? parentAccountId, int userId, IAccountRepository repository, int? accountId = null)
+    {
+        if (type == AccountType.CreditCard)
+        {
+            if (!parentAccountId.HasValue)
+                return Results.BadRequest("Cartão de crédito precisa estar vinculado a uma conta corrente.");
+
+            if (accountId.HasValue && parentAccountId.Value == accountId.Value)
+                return Results.BadRequest("O cartão de crédito não pode ser vinculado a ele mesmo.");
+
+            var parentAccount = await repository.GetByIdAsync(parentAccountId.Value);
+            if (parentAccount is null || parentAccount.UserId != userId)
+                return Results.BadRequest("Conta vinculada inválida.");
+
+            if (parentAccount.Type != AccountType.Checking)
+                return Results.BadRequest("O cartão de crédito só pode ser vinculado a uma conta corrente.");
+        }
+        else if (parentAccountId.HasValue)
+        {
+            return Results.BadRequest("Conta corrente não pode possuir conta vinculada.");
+        }
+
+        return null;
+    }
+
+    private sealed record CreateAccountRequest(string Name, decimal InitialBalance, AccountType Type, int? ParentAccountId);
+    private sealed record UpdateAccountRequest(string Name, decimal InitialBalance, AccountType Type, int? ParentAccountId);
 }

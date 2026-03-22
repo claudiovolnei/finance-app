@@ -673,3 +673,17 @@ body {
     color: #b91c1c;
     font-weight: 700;
 }
+
+
+.credit-card-debt-card {
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(254,242,242,0.98));
+    box-shadow: 0 14px 36px rgba(239, 68, 68, 0.08);
+}
+
+.credit-card-debt-value {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #b91c1c;
+}
