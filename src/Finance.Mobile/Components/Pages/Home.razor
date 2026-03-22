@@ -249,7 +249,7 @@
     }
 
     private RenderFragment LatestTransactionRow(TransactionSummaryDto tx) => @<>
-        <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+        <MudListItem T="TransactionSummaryDto" Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
                 <MudStack Spacing="0" Style="min-width:0;">
                     <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
