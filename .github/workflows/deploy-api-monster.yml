@@ -15,7 +15,6 @@ jobs:
       Jwt__Key: ${{ secrets.JWT_KEY }}
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -34,7 +33,7 @@ jobs:
           dotnet restore src/Finance.Infrastructure/Finance.Infrastructure.csproj
           dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Validate migration history and apply pending migrations
+      - name: Apply migrations before deploy
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -47,53 +46,26 @@ jobs:
             throw "JWT_KEY secret is not configured."
           }
 
-          $dbMigrationsRaw = @()
-          $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+          $migrationsBeforeUpdate = dotnet ef migrations list `
+            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+            --startup-project src/Finance.Api/Finance.Api.csproj `
+            --context AppDbContext `
+            --connection "$env:FINANCE_DB_CONNECTION"
 
-          try {
-            $connection.Open()
-            $command = $connection.CreateCommand()
-            $command.CommandText = (
-              "IF OBJECT_ID(N'__EFMigrationsHistory', N'U') IS NULL" +
-              "`nBEGIN" +
-              "`n    SELECT CAST(NULL AS nvarchar(150)) AS MigrationId" +
-              "`nEND" +
-              "`nELSE" +
-              "`nBEGIN" +
-              "`n    SELECT MigrationId FROM __EFMigrationsHistory" +
-              "`nEND"
-            )
-
-            $reader = $command.ExecuteReader()
-            while ($reader.Read()) {
-              if (-not $reader.IsDBNull(0)) {
-                $dbMigrationsRaw += $reader.GetString(0)
-              }
-            }
-            $reader.Close()
-          }
-          finally {
-            $connection.Close()
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef migrations list' failed before database update with exit code $LASTEXITCODE."
           }
 
-          $dbMigrations = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-          foreach ($migration in $dbMigrationsRaw) {
-            $null = $dbMigrations.Add($migration)
+          Write-Host "Migrations before database update:"
+          Write-Host $migrationsBeforeUpdate
+
+          $pendingMigrationsBeforeUpdate = @($migrationsBeforeUpdate | Where-Object { $_ -match '\(Pending\)' })
+          if ($pendingMigrationsBeforeUpdate.Count -eq 0) {
+            Write-Host "No pending migrations reported before update. Running 'dotnet ef database update' anyway to keep the target database synchronized."
           }
-
-          $localMigrations = Get-ChildItem -Path 'src/Finance.Infrastructure/Migrations' -Filter '*.cs' |
-            Where-Object { $_.Name -notlike '*.Designer.cs' -and $_.BaseName -ne 'AppDbContextModelSnapshot' } |
-            ForEach-Object { $_.BaseName }
-
-          $missingMigrations = @($localMigrations | Where-Object { -not $dbMigrations.Contains($_) })
-
-          if ($missingMigrations.Count -eq 0) {
-            Write-Host "Database history already contains all local migrations."
-            exit 0
+          else {
+            Write-Host "Pending migrations detected before update: $($pendingMigrationsBeforeUpdate -join '; ')"
           }
-
-          Write-Host "Pending migrations in history table: $($missingMigrations -join ', ')"
-          Write-Host "Applying migrations..."
 
           dotnet ef database update `
             --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
