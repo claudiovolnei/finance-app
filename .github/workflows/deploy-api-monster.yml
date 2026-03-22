@@ -154,6 +154,63 @@ jobs:
             return @($dbMigrations)
           }
 
+          function Get-HistoryProductVersion {
+            $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+
+            try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = "SELECT TOP 1 ProductVersion FROM __EFMigrationsHistory ORDER BY MigrationId DESC"
+              $result = $command.ExecuteScalar()
+
+              if ($null -eq $result -or [string]::IsNullOrWhiteSpace($result.ToString())) {
+                return '10.0.2'
+              }
+
+              return $result.ToString()
+            }
+            finally {
+              $connection.Close()
+            }
+          }
+
+          function Test-AccountTypeMigrationSchemaPresent {
+            $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+
+            try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = "SELECT CASE WHEN COL_LENGTH('dbo.Accounts', 'Type') IS NOT NULL AND COL_LENGTH('dbo.Accounts', 'ParentAccountId') IS NOT NULL AND EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Accounts_ParentAccountId' AND object_id = OBJECT_ID(N'dbo.Accounts')) AND EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Accounts_Accounts_ParentAccountId' AND parent_object_id = OBJECT_ID(N'dbo.Accounts')) THEN 1 ELSE 0 END"
+              return [int]$command.ExecuteScalar() -eq 1
+            }
+            finally {
+              $connection.Close()
+            }
+          }
+
+          function Add-MigrationHistoryEntry {
+            param(
+              [string]$MigrationId,
+              [string]$ProductVersion
+            )
+
+            $connection = New-Object System.Data.SqlClient.SqlConnection($env:FINANCE_DB_CONNECTION)
+
+            try {
+              $connection.Open()
+              $command = $connection.CreateCommand()
+              $command.CommandText = "INSERT INTO __EFMigrationsHistory (MigrationId, ProductVersion) VALUES (@migrationId, @productVersion)"
+              $null = $command.Parameters.Add("@migrationId", [System.Data.SqlDbType]::NVarChar, 150)
+              $command.Parameters["@migrationId"].Value = $MigrationId
+              $null = $command.Parameters.Add("@productVersion", [System.Data.SqlDbType]::NVarChar, 32)
+              $command.Parameters["@productVersion"].Value = $ProductVersion
+              $null = $command.ExecuteNonQuery()
+            }
+            finally {
+              $connection.Close()
+            }
+          }
+
           $localMigrations = Get-ChildItem -Path 'src/Finance.Infrastructure/Migrations' -Filter '*.cs' |
             Where-Object { $_.Name -notlike '*.Designer.cs' -and $_.BaseName -ne 'AppDbContextModelSnapshot' } |
             Sort-Object Name |
@@ -180,6 +237,13 @@ jobs:
             Write-Host "Migrations missing from __EFMigrationsHistory: $($missingMigrations -join ', ')"
 
             foreach ($migration in $missingMigrations) {
+              if ($migration -eq '20260322110000_AddAccountTypeAndParentAccount' -and (Test-AccountTypeMigrationSchemaPresent)) {
+                $productVersion = Get-HistoryProductVersion
+                Write-Host "Schema for '$migration' already exists. Recording migration in __EFMigrationsHistory with ProductVersion '$productVersion'."
+                Add-MigrationHistoryEntry -MigrationId $migration -ProductVersion $productVersion
+                continue
+              }
+
               Write-Host "Applying missing migration target '$migration'..."
 
               dotnet ef database update $migration `
