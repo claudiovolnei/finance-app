@@ -74,7 +74,7 @@
                 <MudList T="Category" Dense="true" Class="pa-0">
                     @foreach (var category in PagedCategories)
                     {
-                        <MudListItem Class="px-0">
+                        <MudListItem T="Category" Class="px-0">
                             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%; gap:12px;">
                                 <MudStack Spacing="0" Style="min-width:0;">
                                     <MudText Typo="Typo.body2" Class="list-primary-text">@category.Name</MudText>
