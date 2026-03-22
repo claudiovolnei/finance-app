@@ -2,8 +2,15 @@ name: Deploy Finance API (MonsterASP)
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+    paths:
+      - '.github/workflows/deploy-api-monster.yml'
+      - 'FinanceApp.slnx'
+      - 'src/Finance.Api/**'
+      - 'src/Finance.Application/**'
+      - 'src/Finance.Domain/**'
+      - 'src/Finance.Infrastructure/**'
   workflow_dispatch:
 
 jobs:
