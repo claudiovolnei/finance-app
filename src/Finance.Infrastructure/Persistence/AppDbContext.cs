@@ -22,5 +22,15 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.TransferAccountId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Account>()
+            .Property(a => a.Type)
+            .HasConversion<int>();
+
+        modelBuilder.Entity<Account>()
+            .HasOne<Account>()
+            .WithMany()
+            .HasForeignKey(a => a.ParentAccountId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

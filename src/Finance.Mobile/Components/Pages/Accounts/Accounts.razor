@@ -25,28 +25,44 @@
     }
     else
     {
-        <MudPaper Class="pa-4" Elevation="1">
-            <MudText Typo="Typo.caption" Class="mud-text-secondary mb-2">@_accounts.Count contas</MudText>
-            <MudList T="Account" Dense="true" Class="pa-0">
-                @foreach (var account in _accounts)
-                {
-                    <MudListItem Class="px-0">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                            <MudStack Spacing="0" Style="min-width:0;">
-                                <MudText Typo="Typo.body2" Class="list-primary-text">@account.Name</MudText>
-                                <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">Saldo inicial: @account.InitialBalance.ToString("C", new System.Globalization.CultureInfo("pt-BR"))</MudText>
-                            </MudStack>
-
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(account.Id))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteAccount(account.Id))" />
-                            </MudStack>
-                        </MudStack>
-                    </MudListItem>
-                    <MudDivider />
-                }
-            </MudList>
-        </MudPaper>
+        <MudGrid GutterSize="GutterSize.Small">
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.subtitle2" Class="mb-3">Contas correntes</MudText>
+                    @if (!CheckingAccounts.Any())
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">Nenhuma conta corrente cadastrada.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudList T="Account" Dense="true" Class="pa-0">
+                            @foreach (var account in CheckingAccounts)
+                            {
+                                @AccountRow(account)
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="6">
+                <MudPaper Class="pa-4" Elevation="1">
+                    <MudText Typo="Typo.subtitle2" Class="mb-3">Cartões de crédito</MudText>
+                    @if (!CreditCardAccounts.Any())
+                    {
+                        <MudAlert Severity="Severity.Info" Dense="true">Nenhum cartão cadastrado.</MudAlert>
+                    }
+                    else
+                    {
+                        <MudList T="Account" Dense="true" Class="pa-0">
+                            @foreach (var account in CreditCardAccounts)
+                            {
+                                @AccountRow(account)
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
     }
 
     @if (!string.IsNullOrEmpty(_message))
@@ -61,6 +77,9 @@
     private string _message = string.Empty;
     private Severity _alertSeverity = Severity.Info;
 
+    private List<Account> CheckingAccounts => _accounts.Where(a => a.Type == AccountType.Checking).OrderBy(a => a.Name).ToList();
+    private List<Account> CreditCardAccounts => _accounts.Where(a => a.Type == AccountType.CreditCard).OrderBy(a => a.Name).ToList();
+
     protected override async Task OnInitializedAsync()
     {
         var token = await TokenService.GetTokenAsync();
@@ -73,6 +92,24 @@
         ApiClient.SetBearerToken(token);
         await LoadAccounts();
     }
+
+    private RenderFragment AccountRow(Account account) => @<>
+        <MudListItem Class="px-0">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                <MudStack Spacing="0" Style="min-width:0;">
+                    <MudText Typo="Typo.body2" Class="list-primary-text">@account.Name</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@GetSubtitle(account)</MudText>
+                </MudStack>
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(account.Type == AccountType.CreditCard ? Color.Error : Color.Info)">@GetTypeLabel(account.Type)</MudChip>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => NavigateToEdit(account.Id))" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteAccount(account.Id))" />
+                </MudStack>
+            </MudStack>
+        </MudListItem>
+        <MudDivider />
+    </>;
 
     private async Task LoadAccounts()
     {
@@ -92,6 +129,12 @@
             _loading = false;
         }
     }
+
+    private static string GetTypeLabel(AccountType type) => type == AccountType.CreditCard ? "Cartão" : "Conta";
+
+    private string GetSubtitle(Account account) => account.Type == AccountType.CreditCard
+        ? $"Vinculado a: {_accounts.FirstOrDefault(a => a.Id == account.ParentAccountId)?.Name ?? "-"}"
+        : $"Saldo inicial: {account.InitialBalance.ToString("C", new System.Globalization.CultureInfo("pt-BR"))}";
 
     private void NavigateToAdd() => Navigation.NavigateTo("/accounts/add");
     private void NavigateToEdit(int id) => Navigation.NavigateTo($"/accounts/edit/{id}");

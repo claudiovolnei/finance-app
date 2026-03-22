@@ -20,16 +20,24 @@ public class TransactionRepository : ITransactionRepository
     public Task<List<Transaction>> GetAllAsync()
         => _context.Transactions.ToListAsync();
 
-    public Task<List<Transaction>> GetByUserIdAsync(int userId, int? year = null, int? month = null, int? accountId = null)
+    public async Task<List<Transaction>> GetByUserIdAsync(int userId, int? year = null, int? month = null, int? accountId = null)
     {
-        var q = _context.Transactions.Where(t => t.UserId == userId).AsQueryable();
+        var query = _context.Transactions.Where(t => t.UserId == userId).AsQueryable();
         if (year.HasValue)
-            q = q.Where(t => t.Date.Year == year.Value);
+            query = query.Where(t => t.Date.Year == year.Value);
         if (month.HasValue)
-            q = q.Where(t => t.Date.Month == month.Value);
+            query = query.Where(t => t.Date.Month == month.Value);
         if (accountId.HasValue)
-            q = q.Where(t => t.AccountId == accountId.Value);
-        return q.ToListAsync();
+        {
+            var scopeAccountIds = await _context.Accounts
+                .Where(a => a.UserId == userId && (a.Id == accountId.Value || a.ParentAccountId == accountId.Value))
+                .Select(a => a.Id)
+                .ToListAsync();
+
+            query = query.Where(t => scopeAccountIds.Contains(t.AccountId));
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task AddAsync(Transaction transaction)
@@ -62,10 +70,17 @@ public class TransactionRepository : ITransactionRepository
         }
     }
 
-    public Task<decimal> GetBalanceTotal(int userId, int year, int accountId)
+    public async Task<decimal> GetBalanceTotal(int userId, int year, int accountId)
     {
-        return _context.Transactions
-            .Where(t => t.UserId == userId && t.Date.Year == year && t.AccountId == accountId)
+        var accountIds = accountId > 0
+            ? await _context.Accounts.Where(a => a.UserId == userId && (a.Id == accountId || a.ParentAccountId == accountId)).Select(a => a.Id).ToListAsync()
+            : await _context.Accounts.Where(a => a.UserId == userId && a.Type == AccountType.Checking).Select(a => a.Id).ToListAsync();
+
+        if (accountIds.Count == 0)
+            return 0m;
+
+        return await _context.Transactions
+            .Where(t => t.UserId == userId && t.Date.Year == year && accountIds.Contains(t.AccountId))
             .SumAsync(t => t.Type == TransactionType.Income ? t.Amount : -t.Amount);
     }
 

@@ -7,19 +7,19 @@
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
-        <MudItem xs="12" sm="12">
+        <MudItem xs="12" sm="6" md="4">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Saldo Atual</MudText>
                 <MudText Typo="Typo.h5" Class="fluid-value" Color="_summary?.Balance > 0 ? Color.Success : Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.Balance))</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="6" sm="6">
+        <MudItem xs="6" sm="3" md="4">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Receitas</MudText>
                 <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Success">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalIncome))</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="6" sm="6">
+        <MudItem xs="6" sm="3" md="4">
             <MudPaper Class="pa-4 card-center" Elevation="1">
                 <MudText Typo="Typo.subtitle1">Despesas</MudText>
                 <MudText Typo="Typo.h5" Class="fluid-value" Color="Color.Error">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalExpense))</MudText>
@@ -27,9 +27,32 @@
         </MudItem>
 
         <MudItem xs="12" class="mt-3">
+            <MudPaper Class="pa-4 credit-card-debt-card" Elevation="1">
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.subtitle2">Dívida do cartão</MudText>
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary">Total acumulado dos cartões vinculados no período.</MudText>
+                    </MudStack>
+                    <MudChip T="string" Color="Color.Error" Variant="Variant.Filled" Size="Size.Small">Cartões</MudChip>
+                </MudStack>
+                <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.End" Class="mt-4">
+                    <MudText Typo="Typo.h4" Class="credit-card-debt-value">@(_summary is null ? "-" : string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _summary.TotalCreditCardDebt))</MudText>
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_summary?.CreditCardExpenses.Count ?? 0) cartão(ões) com movimentação</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6" class="mt-3">
             <MudPaper Class="pa-4">
                 <MudText Typo="Typo.subtitle1" Class="mb-2">Categorias por tipo</MudText>
                 <CategoryBarChart CategoryIds="@_chartCategoryIds" Labels="@_chartLabels" Values="@_chartDataRaw" Percentages="@_chartPercentages" Types="@_chartTypes" EmptyMessage="Sem dados" OnCategoryClick="OpenCategoryDialogAsync" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="6" class="mt-3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Gastos do cartão</MudText>
+                <CreditCardExpenseBarChart Data="@(_summary?.CreditCardExpenses ?? new List<CreditCardExpenseSummaryDto>())" />
             </MudPaper>
         </MudItem>
 
@@ -55,19 +78,7 @@
                         <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0 mb-3">
                             @foreach (var tx in _latestIncomeTransactions)
                             {
-                                <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                                        <MudStack Spacing="0" Style="min-width:0;">
-                                            <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
-                                            <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
-                                        </MudStack>
-                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                            <MudChip T="string" Color="Color.Success" Variant="Variant.Text" Size="Size.Small">Crédito</MudChip>
-                                            <MudText Typo="Typo.body2" Class="list-value-text" Color="Color.Success">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</MudText>
-                                        </MudStack>
-                                    </MudStack>
-                                </MudListItem>
-                                <MudDivider />
+                                @LatestTransactionRow(tx)
                             }
                         </MudList>
                     }
@@ -77,25 +88,9 @@
                         <MudText Typo="Typo.caption" Class="mud-text-secondary mb-1">Débitos</MudText>
                         <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
                             @foreach (var tx in _latestExpenseTransactions)
-                        {
-                            <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                                    <MudStack Spacing="0" Style="min-width:0;">
-                                        <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
-                                        <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
-                                    </MudStack>
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
-                                            @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
-                                        </MudChip>
-                                        <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
-                                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
-                                        </MudText>
-                                    </MudStack>
-                                </MudStack>
-                            </MudListItem>
-                            <MudDivider />
-                        }
+                            {
+                                @LatestTransactionRow(tx)
+                            }
                         </MudList>
                     }
                 }
@@ -124,23 +119,7 @@
                     <MudList T="TransactionSummaryDto" Dense="true" Class="pa-0">
                         @foreach (var tx in _categoryDialogTransactions)
                         {
-                            <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
-                                    <MudStack Spacing="0" Style="min-width:0;">
-                                        <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
-                                        <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
-                                    </MudStack>
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                        <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">
-                                            @(tx.Type == TransactionType.Income ? "Crédito" : "Débito")
-                                        </MudChip>
-                                        <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">
-                                            @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)
-                                        </MudText>
-                                    </MudStack>
-                                </MudStack>
-                            </MudListItem>
-                            <MudDivider />
+                            @LatestTransactionRow(tx)
                         }
                     </MudList>
                 }
@@ -165,20 +144,28 @@
                     <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
                         <MudStack Spacing="0">
                             <MudText Typo="Typo.caption" Class="mud-text-secondary">Valor da transação</MudText>
-                            <MudText Typo="Typo.h5" Color="@GetTransactionColor(_selectedTransaction.Type)">
-                                @string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransaction.Amount)
-                            </MudText>
+                            <MudText Typo="Typo.h5" Color="@GetTransactionColor(_selectedTransaction.Type)">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", _selectedTransaction.Amount)</MudText>
                         </MudStack>
-                        <MudChip T="string"
-                                 Color="@GetTransactionColor(_selectedTransaction.Type)"
-                                 Variant="Variant.Filled"
-                                 Size="Size.Small">
-                            @(_selectedTransaction.Type == TransactionType.Income ? "Receita" : "Despesa")
-                        </MudChip>
+                        <MudChip T="string" Color="@GetTransactionColor(_selectedTransaction.Type)" Variant="Variant.Filled" Size="Size.Small">@(_selectedTransaction.Type == TransactionType.Income ? "Receita" : "Despesa")</MudChip>
                     </MudStack>
                 </MudPaper>
 
                 <MudGrid Class="transaction-detail-grid" GutterSize="GutterSize.Small">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Class="transaction-detail-item" Elevation="0">
+                            <MudText Typo="Typo.caption" Class="mud-text-secondary">Conta do lançamento</MudText>
+                            <MudText Typo="Typo.body1">@_selectedTransaction.AccountName</MudText>
+                        </MudPaper>
+                    </MudItem>
+                    @if (_selectedTransaction.IsCreditCardExpense)
+                    {
+                        <MudItem xs="12" sm="6">
+                            <MudPaper Class="transaction-detail-item" Elevation="0">
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">Conta vinculada</MudText>
+                                <MudText Typo="Typo.body1">@(_selectedTransaction.ParentAccountName ?? "-")</MudText>
+                            </MudPaper>
+                        </MudItem>
+                    }
                     <MudItem xs="12" sm="6">
                         <MudPaper Class="transaction-detail-item" Elevation="0">
                             <MudText Typo="Typo.caption" Class="mud-text-secondary">Categoria</MudText>
@@ -195,8 +182,8 @@
                     {
                         <MudItem xs="12" sm="6">
                             <MudPaper Class="transaction-detail-item" Elevation="0">
-                               <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_selectedTransaction.Type == TransactionType.Income ? "Recebido da: " : "Enviado para: ") </MudText>
-                                <MudText Typo="Typo.body1">@_selectedTransaction.TransactionAccountName.ToString()</MudText>
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_selectedTransaction.Type == TransactionType.Income ? "Recebido da:" : "Enviado para:")</MudText>
+                                <MudText Typo="Typo.body1">@_selectedTransaction.TransactionAccountName</MudText>
                             </MudPaper>
                         </MudItem>
                     }
@@ -209,7 +196,6 @@
                 </MudGrid>
 
                 <MudDivider />
-
                 <MudText Typo="Typo.caption" Class="mud-text-secondary">Referência da transação #@_selectedTransaction.Id</MudText>
             </MudStack>
         </MudPaper>
@@ -262,6 +248,26 @@
         await LoadSummaryAsync();
     }
 
+    private RenderFragment LatestTransactionRow(TransactionSummaryDto tx) => @<>
+        <MudListItem Class="px-0" Button="true" OnClick="@(() => OpenTransactionDialog(tx))">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="width:100%;">
+                <MudStack Spacing="0" Style="min-width:0;">
+                    <MudText Typo="Typo.body2" Class="list-primary-text">@tx.CategoryName</MudText>
+                    <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                        <MudText Typo="Typo.caption" Class="mud-text-secondary list-secondary-text">@tx.Date.ToString("dd/MM/yyyy")</MudText>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@(tx.IsCreditCardExpense ? Color.Error : Color.Info)">@GetAccountChipLabel(tx)</MudChip>
+                    </MudStack>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                    <MudText Typo="Typo.caption" Class="mud-text-secondary">@tx.AccountName</MudText>
+                    <MudChip T="string" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)" Variant="Variant.Text" Size="Size.Small">@(tx.Type == TransactionType.Income ? "Crédito" : "Débito")</MudChip>
+                    <MudText Typo="Typo.body2" Class="list-value-text" Color="@(tx.Type == TransactionType.Income ? Color.Success : Color.Error)">@string.Format(new System.Globalization.CultureInfo("pt-BR"), "{0:C}", tx.Amount)</MudText>
+                </MudStack>
+            </MudStack>
+        </MudListItem>
+        <MudDivider />
+    </>;
+
     private string GetCurrentFilterLabel() => _current.ToString("MMMM yyyy", new System.Globalization.CultureInfo("pt-BR"));
 
     private async Task PrevMonth()
@@ -297,29 +303,14 @@
             _chartDataRaw = dto.Categories.Select(c => (double)c.Amount).ToArray();
             var totalIncome = dto.TotalIncome;
             var totalExpense = dto.TotalExpense;
-            _chartPercentages = dto.Categories
-                .Select(c =>
-                {
-                    var totalByType = c.Type == TransactionType.Income ? totalIncome : totalExpense;
-                    if (totalByType <= 0)
-                    {
-                        return 0d;
-                    }
-
-                    return (double)(c.Amount / totalByType * 100m);
-                })
-                .ToArray();
+            _chartPercentages = dto.Categories.Select(c =>
+            {
+                var totalByType = c.Type == TransactionType.Income ? totalIncome : totalExpense;
+                return totalByType <= 0 ? 0d : (double)(c.Amount / totalByType * 100m);
+            }).ToArray();
             _chartTypes = dto.Categories.Select(c => c.Type).ToArray();
-            _latestIncomeTransactions = dto.LatestTransactions
-                .Where(t => t.Type == TransactionType.Income)
-                .OrderByDescending(t => t.Date)
-                .ThenByDescending(t => t.Id)
-                .ToList();
-            _latestExpenseTransactions = dto.LatestTransactions
-                .Where(t => t.Type == TransactionType.Expense)
-                .OrderByDescending(t => t.Date)
-                .ThenByDescending(t => t.Id)
-                .ToList();
+            _latestIncomeTransactions = dto.LatestTransactions.Where(t => t.Type == TransactionType.Income).OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToList();
+            _latestExpenseTransactions = dto.LatestTransactions.Where(t => t.Type == TransactionType.Expense).OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToList();
             await InvokeAsync(StateHasChanged);
         }
         catch
@@ -340,6 +331,10 @@
         });
     }
 
+    private string GetAccountChipLabel(TransactionSummaryDto transaction) => transaction.IsCreditCardExpense
+        ? $"Cartão · {transaction.ParentAccountName}"
+        : "Conta corrente";
+
     private void OpenTransactionDialog(TransactionSummaryDto transaction)
     {
         _selectedTransaction = transaction;
@@ -356,14 +351,8 @@
         _selectedTransaction = null;
     }
 
-    private string GetTransactionPanelClass() =>
-        _isTransactionDialogOpen
-            ? "transaction-detail-dialog transaction-detail-dialog-open"
-            : "transaction-detail-dialog transaction-detail-dialog-close";
-
-    private Color GetTransactionColor(TransactionType type) =>
-        type == TransactionType.Income ? Color.Success : Color.Error;
-
+    private string GetTransactionPanelClass() => _isTransactionDialogOpen ? "transaction-detail-dialog transaction-detail-dialog-open" : "transaction-detail-dialog transaction-detail-dialog-close";
+    private Color GetTransactionColor(TransactionType type) => type == TransactionType.Income ? Color.Success : Color.Error;
 
     private async Task OpenCategoryDialogAsync(CategoryChartSelection selection)
     {
@@ -376,10 +365,7 @@
             _categoryDialogTitle = $"Lançamentos em {details.Title}";
             _categoryDialogTotal = details.TotalAmount;
             _categoryDialogType = details.Type;
-            _categoryDialogTransactions = details.Transactions
-                .OrderBy(t => t.Date)
-                .ThenBy(t => t.Id)
-                .ToList();
+            _categoryDialogTransactions = details.Transactions.OrderBy(t => t.Date).ThenBy(t => t.Id).ToList();
             _isCategoryPanelVisible = true;
             _isCategoryDialogOpen = true;
             await InvokeAsync(StateHasChanged);
@@ -399,13 +385,7 @@
         _categoryDialogTransactions = new();
     }
 
-    private string GetCategoryPanelClass() =>
-        _isCategoryDialogOpen
-            ? "transaction-detail-dialog transaction-detail-dialog-open"
-            : "transaction-detail-dialog transaction-detail-dialog-close";
+    private string GetCategoryPanelClass() => _isCategoryDialogOpen ? "transaction-detail-dialog transaction-detail-dialog-open" : "transaction-detail-dialog transaction-detail-dialog-close";
 
-    public void Dispose()
-    {
-        AccountState.OnChange -= HandleAccountChanged;
-    }
+    public void Dispose() => AccountState.OnChange -= HandleAccountChanged;
 }

@@ -41,7 +41,7 @@ public class UpdateTransactionUseCase
 
         if (transferAccountId.HasValue)
         {
-            await UpdateTransferAsync(transaction, accountId, transferAccountId.Value, amount, date, description, type, userId);
+            await UpdateTransferAsync(transaction, account, transferAccountId.Value, amount, date, description, type, userId);
             return;
         }
 
@@ -55,16 +55,22 @@ public class UpdateTransactionUseCase
         await _transactionRepository.UpdateAsync(transaction, accountId, categoryId, null, amount, date, description, type);
     }
 
-    private async Task UpdateTransferAsync(Transaction transaction, int accountId, int transferAccountId, decimal amount, DateTime date, string description, TransactionType type, int userId)
+    private async Task UpdateTransferAsync(Transaction transaction, Account account, int transferAccountId, decimal amount, DateTime date, string description, TransactionType type, int userId)
     {
-        if (accountId == transferAccountId)
+        if (account.Type != AccountType.Checking)
+            throw new ArgumentException("Transferências só podem ser iniciadas a partir de contas correntes.");
+
+        if (account.Id == transferAccountId)
             throw new ArgumentException("A conta de transferência deve ser diferente da conta atual.");
 
         var destinationAccount = await _accountRepository.GetByIdAsync(transferAccountId);
         if (destinationAccount is null || destinationAccount.UserId != userId)
             throw new ArgumentException("Conta de transferência inválida.");
 
-        var fromAccountId = type == TransactionType.Expense ? accountId : transferAccountId;
+        if (destinationAccount.Type != AccountType.Checking)
+            throw new ArgumentException("Transferências só podem ocorrer entre contas correntes.");
+
+        var fromAccountId = type == TransactionType.Expense ? account.Id : transferAccountId;
         var availableBalance = await _transactionRepository.GetAccountBalanceAsync(userId, fromAccountId);
 
         var existingDebitFromAccount = transaction.Type == TransactionType.Expense ? transaction.AccountId : transaction.TransferAccountId;
@@ -77,7 +83,7 @@ public class UpdateTransactionUseCase
         var counterpart = await _transactionRepository.FindTransferCounterpartAsync(transaction);
 
         var debitAccountId = fromAccountId;
-        var creditAccountId = fromAccountId == accountId ? transferAccountId : accountId;
+        var creditAccountId = fromAccountId == account.Id ? transferAccountId : account.Id;
 
         if (transaction.Type == TransactionType.Expense)
         {

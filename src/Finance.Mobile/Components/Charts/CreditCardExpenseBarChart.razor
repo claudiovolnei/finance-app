@@ -1,0 +1,60 @@
+@using System.Globalization
+@namespace Finance.Mobile.Components.Charts
+
+<style>
+    .credit-card-chart { display:flex; flex-direction:column; gap:12px; }
+    .credit-card-row { display:flex; flex-direction:column; gap:6px; }
+    .credit-card-row-header { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+    .credit-card-row-label { font-weight:600; color:#0f172a; }
+    .credit-card-row-value { color:#b91c1c; font-weight:700; }
+    .credit-card-row-track { height:12px; border-radius:999px; background:rgba(148,163,184,.24); overflow:hidden; }
+    .credit-card-row-fill { height:100%; border-radius:999px; background:linear-gradient(90deg, #fb7185, #ef4444); }
+    .credit-card-empty { text-align:center; color:rgba(0,0,0,.45); padding:20px 0; }
+</style>
+
+@if (Items.Count == 0)
+{
+    <div class="credit-card-empty">@EmptyMessage</div>
+}
+else
+{
+    <div class="credit-card-chart">
+        @foreach (var item in Items)
+        {
+            <div class="credit-card-row">
+                <div class="credit-card-row-header">
+                    <span class="credit-card-row-label">@item.Label</span>
+                    <span class="credit-card-row-value">@string.Format(new CultureInfo("pt-BR"), "{0:C}", item.Amount)</span>
+                </div>
+                <div class="credit-card-row-track">
+                    <div class="credit-card-row-fill" style="width:@item.Width"></div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private sealed record ChartItem(string Label, decimal Amount, string Width);
+
+    [Parameter] public IReadOnlyList<Finance.Mobile.Services.CreditCardExpenseSummaryDto> Data { get; set; } = Array.Empty<Finance.Mobile.Services.CreditCardExpenseSummaryDto>();
+    [Parameter] public string EmptyMessage { get; set; } = "Sem gastos no cartão no período";
+
+    private List<ChartItem> Items
+    {
+        get
+        {
+            if (Data.Count == 0)
+                return new();
+
+            var max = Data.Max(x => x.Amount);
+            if (max <= 0)
+                max = 1;
+
+            return Data
+                .OrderByDescending(x => x.Amount)
+                .Select(x => new ChartItem(x.AccountName, x.Amount, $"{Math.Max(8m, Math.Round(x.Amount / max * 100m, 2)).ToString(CultureInfo.InvariantCulture)}%"))
+                .ToList();
+        }
+    }
+}

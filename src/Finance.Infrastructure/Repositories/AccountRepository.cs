@@ -21,7 +21,7 @@ public class AccountRepository : IAccountRepository
         => _context.Accounts.ToListAsync();
 
     public Task<List<Account>> GetByUserIdAsync(int userId)
-        => _context.Accounts.Where(a => a.UserId == userId).ToListAsync();
+        => _context.Accounts.Where(a => a.UserId == userId).OrderBy(a => a.Name).ToListAsync();
 
     public async Task AddAsync(Account account)
     {
@@ -29,9 +29,9 @@ public class AccountRepository : IAccountRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateAsync(Account account, string newName, decimal newInitialBalance)
+    public async Task UpdateAsync(Account account, string newName, decimal newInitialBalance, AccountType type, int? parentAccountId)
     {
-        account.Update(newName, newInitialBalance);
+        account.Update(newName, newInitialBalance, type, parentAccountId);
 
         _context.Accounts.Update(account);
         await _context.SaveChangesAsync();

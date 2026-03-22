@@ -23,6 +23,11 @@ public record UpdateTransactionRequest(
 public record TransactionResponseDto(
     int Id,
     int AccountId,
+    string AccountName,
+    AccountType AccountType,
+    int? ParentAccountId,
+    string? ParentAccountName,
+    bool IsCreditCardExpense,
     int? CategoryId,
     int? TransferAccountId,
     string TransactionAccountName,
