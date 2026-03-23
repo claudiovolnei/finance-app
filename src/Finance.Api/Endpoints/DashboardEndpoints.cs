@@ -38,6 +38,10 @@ public static class DashboardEndpoints
 
         var totalIncome = transactions.Where(t => t.Type == TransactionType.Income).Sum(t => t.Amount);
         var totalExpense = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => t.Amount);
+        var creditCardAccounts = accounts.Where(a => a.Type == AccountType.CreditCard).ToList();
+        var totalCreditCardAccounts = accountId.HasValue
+            ? creditCardAccounts.Count(a => a.ParentAccountId == accountId.Value)
+            : creditCardAccounts.Count;
         var totalCreditCardDebt = transactions
             .Where(t => t.Type == TransactionType.Expense && accountMap.TryGetValue(t.AccountId, out var account) && account.Type == AccountType.CreditCard)
             .Sum(t => t.Amount);
@@ -89,7 +93,7 @@ public static class DashboardEndpoints
 
         var latest = BuildTransactionSummaries(latestTxs, categoryMap, accountMap);
 
-        var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, totalCreditCardDebt, categorySummaries, creditCardExpenses, latest);
+        var dto = new DashboardSummaryDto(balance, totalIncome, totalExpense, totalCreditCardDebt, totalCreditCardAccounts, categorySummaries, creditCardExpenses, latest);
         return Results.Ok(dto);
     }
 
