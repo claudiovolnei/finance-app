@@ -40,82 +40,6 @@ jobs:
           dotnet restore src/Finance.Infrastructure/Finance.Infrastructure.csproj
           dotnet restore src/Finance.Api/Finance.Api.csproj
 
-      - name: Apply migrations before deploy
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          if (-not $env:FINANCE_DB_CONNECTION) {
-            throw "FINANCE_DB_CONNECTION secret is not configured."
-          }
-
-          if (-not $env:Jwt__Key) {
-            throw "JWT_KEY secret is not configured."
-          }
-
-          $migrationsBeforeUpdate = dotnet ef migrations list `
-            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
-            --startup-project src/Finance.Api/Finance.Api.csproj `
-            --context AppDbContext `
-            --connection "$env:FINANCE_DB_CONNECTION"
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "'dotnet ef migrations list' failed before database update with exit code $LASTEXITCODE."
-          }
-
-          Write-Host "Migrations before database update:"
-          Write-Host $migrationsBeforeUpdate
-
-          $pendingMigrationsBeforeUpdate = @($migrationsBeforeUpdate | Where-Object { $_ -match '\(Pending\)' })
-          if ($pendingMigrationsBeforeUpdate.Count -eq 0) {
-            Write-Host "No pending migrations reported before update. Running 'dotnet ef database update' anyway to keep the target database synchronized."
-          }
-          else {
-            Write-Host "Pending migrations detected before update: $($pendingMigrationsBeforeUpdate -join '; ')"
-          }
-
-          dotnet ef database update `
-            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
-            --startup-project src/Finance.Api/Finance.Api.csproj `
-            --context AppDbContext `
-            --connection "$env:FINANCE_DB_CONNECTION"
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "'dotnet ef database update' failed with exit code $LASTEXITCODE."
-          }
-
-      - name: Validate no pending migrations after update
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          if (-not $env:FINANCE_DB_CONNECTION) {
-            throw "FINANCE_DB_CONNECTION secret is not configured."
-          }
-
-          if (-not $env:Jwt__Key) {
-            throw "JWT_KEY secret is not configured."
-          }
-
-          $migrationsOutput = dotnet ef migrations list `
-            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
-            --startup-project src/Finance.Api/Finance.Api.csproj `
-            --context AppDbContext `
-            --connection "$env:FINANCE_DB_CONNECTION"
-
-          if ($LASTEXITCODE -ne 0) {
-            throw "'dotnet ef migrations list' failed with exit code $LASTEXITCODE."
-          }
-
-          Write-Host $migrationsOutput
-
-          $pendingMigrations = $migrationsOutput | Where-Object { $_ -match '\(Pending\)' }
-          if ($pendingMigrations) {
-            throw "There are pending migrations after 'dotnet ef database update': $($pendingMigrations -join '; ')"
-          }
-
-          Write-Host "No pending migrations detected after database update."
-
       - name: Reconcile missing migrations in database history
         shell: pwsh
         run: |
@@ -274,6 +198,82 @@ jobs:
           else {
             Write-Host "Database history is synchronized with local migrations."
           }
+
+      - name: Apply migrations before deploy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not $env:FINANCE_DB_CONNECTION) {
+            throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
+          }
+
+          $migrationsBeforeUpdate = dotnet ef migrations list `
+            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+            --startup-project src/Finance.Api/Finance.Api.csproj `
+            --context AppDbContext `
+            --connection "$env:FINANCE_DB_CONNECTION"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef migrations list' failed before database update with exit code $LASTEXITCODE."
+          }
+
+          Write-Host "Migrations before database update:"
+          Write-Host $migrationsBeforeUpdate
+
+          $pendingMigrationsBeforeUpdate = @($migrationsBeforeUpdate | Where-Object { $_ -match '\(Pending\)' })
+          if ($pendingMigrationsBeforeUpdate.Count -eq 0) {
+            Write-Host "No pending migrations reported before update. Running 'dotnet ef database update' anyway to keep the target database synchronized."
+          }
+          else {
+            Write-Host "Pending migrations detected before update: $($pendingMigrationsBeforeUpdate -join '; ')"
+          }
+
+          dotnet ef database update `
+            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+            --startup-project src/Finance.Api/Finance.Api.csproj `
+            --context AppDbContext `
+            --connection "$env:FINANCE_DB_CONNECTION"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef database update' failed with exit code $LASTEXITCODE."
+          }
+
+      - name: Validate no pending migrations after update
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not $env:FINANCE_DB_CONNECTION) {
+            throw "FINANCE_DB_CONNECTION secret is not configured."
+          }
+
+          if (-not $env:Jwt__Key) {
+            throw "JWT_KEY secret is not configured."
+          }
+
+          $migrationsOutput = dotnet ef migrations list `
+            --project src/Finance.Infrastructure/Finance.Infrastructure.csproj `
+            --startup-project src/Finance.Api/Finance.Api.csproj `
+            --context AppDbContext `
+            --connection "$env:FINANCE_DB_CONNECTION"
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "'dotnet ef migrations list' failed with exit code $LASTEXITCODE."
+          }
+
+          Write-Host $migrationsOutput
+
+          $pendingMigrations = $migrationsOutput | Where-Object { $_ -match '\(Pending\)' }
+          if ($pendingMigrations) {
+            throw "There are pending migrations after 'dotnet ef database update': $($pendingMigrations -join '; ')"
+          }
+
+          Write-Host "No pending migrations detected after database update."
 
       - name: Restore
         run: dotnet restore src/Finance.Api/Finance.Api.csproj
