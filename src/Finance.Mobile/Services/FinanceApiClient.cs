@@ -26,6 +26,39 @@ public class FinanceApiClient
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
     }
 
+    private async Task<T?> ReadFromApiAsync<T>(string path, bool allowNotFound = false)
+    {
+        var response = await _httpClient.GetAsync(Url(path));
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new UnauthorizedAccessException();
+
+        if (allowNotFound && response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return default;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(errorContent))
+                response.EnsureSuccessStatusCode();
+
+            throw new HttpRequestException(
+                $"Falha ao consultar {path}: {(int)response.StatusCode} {response.ReasonPhrase}. {errorContent}".Trim());
+        }
+
+        try
+        {
+            return await response.Content.ReadFromJsonAsync<T>();
+        }
+        catch (Exception ex)
+        {
+            var rawContent = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException(
+                $"Falha ao interpretar a resposta de {path}. Conteúdo recebido: {rawContent}",
+                ex);
+        }
+    }
+
     public async Task<DashboardSummaryDto?> GetDashboardSummaryAsync(int? year = null, int? month = null, int? accountId = null)
     {
         var query = new List<string>();
@@ -272,13 +305,13 @@ public class FinanceApiClient
     // ========== ACCOUNTS ==========
     public async Task<List<Account>> GetAccountsAsync()
     {
-        var accounts = await _httpClient.GetFromJsonAsync<List<Account>>(Url("accounts"));
+        var accounts = await ReadFromApiAsync<List<Account>>("accounts");
         return accounts ?? new List<Account>();
     }
 
     public async Task<Account?> GetAccountByIdAsync(int id)
     {
-        return await _httpClient.GetFromJsonAsync<Account>(Url($"accounts/{id}"));
+        return await ReadFromApiAsync<Account>($"accounts/{id}", allowNotFound: true);
     }
 
 

@@ -79,10 +79,18 @@
             return;
         }
 
-        ApiClient.SetBearerToken(token);
-        var accounts = await ApiClient.GetAccountsAsync();
-        _checkingAccounts = accounts.Where(a => a.Type == AccountType.Checking).OrderBy(a => a.Name).ToList();
-        _parentAccountId = _checkingAccounts.FirstOrDefault()?.Id;
+        try
+        {
+            ApiClient.SetBearerToken(token);
+            var accounts = await ApiClient.GetAccountsAsync();
+            _checkingAccounts = accounts.Where(a => a.Type == AccountType.Checking).OrderBy(a => a.Name).ToList();
+            _parentAccountId = _checkingAccounts.FirstOrDefault()?.Id;
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar contas: {ex.Message}";
+            _alertSeverity = Severity.Error;
+        }
     }
 
     private async Task Salvar()

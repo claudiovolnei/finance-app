@@ -91,9 +91,18 @@
             return;
         }
 
-        ApiClient.SetBearerToken(token);
-        _allAccounts = await ApiClient.GetAccountsAsync();
-        await LoadAccount();
+        try
+        {
+            ApiClient.SetBearerToken(token);
+            _allAccounts = await ApiClient.GetAccountsAsync();
+            await LoadAccount();
+        }
+        catch (Exception ex)
+        {
+            _message = $"Erro ao carregar contas: {ex.Message}";
+            _alertSeverity = Severity.Error;
+            _loading = false;
+        }
     }
 
     private async Task LoadAccount()

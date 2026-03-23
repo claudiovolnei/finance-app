@@ -34,6 +34,17 @@
                         <MudSelectItem T="int?" Value="@((int?)account.Id)">@account.Name</MudSelectItem>
                     }
                 </MudSelect>
+
+                @if (!string.IsNullOrWhiteSpace(_accountLoadError))
+                {
+                    <MudTooltip Text="@_accountLoadError">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       Color="Color.Inherit"
+                                       Disabled="@_isLoadingAccounts"
+                                       OnClick="ReloadAccountsAsync"
+                                       Class="appbar-icon-button" />
+                    </MudTooltip>
+                }
             }
 
             <MudSpacer />
@@ -94,6 +105,8 @@
     private MudTheme _theme = new();
     private string? _name;
     private bool _isAuthenticated;
+    private bool _isLoadingAccounts;
+    private string? _accountLoadError;
 
     [Inject] public Finance.Mobile.Services.TokenService TokenService { get; set; } = default!;
     [Inject] public Finance.Mobile.Services.FinanceApiClient ApiClient { get; set; } = default!;
@@ -103,6 +116,7 @@
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += HandleLocationChanged;
+        AccountState.OnChange += HandleAccountStateChanged;
         await RefreshAuthenticationStateAsync();
     }
 
@@ -143,23 +157,57 @@
 
             if (!wasAuthenticated || !AccountState.Accounts.Any())
             {
-                try
-                {
-                    var accounts = await ApiClient.GetAccountsAsync();
-                    AccountState.SetAccounts(accounts);
-                }
-                catch
-                {
-                    // no-op
-                }
+                await ReloadAccountsAsync();
             }
         }
         else
         {
             _name = null;
+            _accountLoadError = null;
+            _isLoadingAccounts = false;
             AccountState.SetAccounts(Array.Empty<Account>());
             AccountState.SetSelectedAccount(null);
         }
+    }
+
+    private async Task ReloadAccountsAsync()
+    {
+        if (!_isAuthenticated)
+            return;
+
+        try
+        {
+            _isLoadingAccounts = true;
+            _accountLoadError = null;
+            var accounts = await ApiClient.GetAccountsAsync();
+            AccountState.SetAccounts(accounts);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            await TokenService.RemoveTokenAsync();
+            _isAuthenticated = false;
+            _name = null;
+            _accountLoadError = null;
+            AccountState.SetAccounts(Array.Empty<Account>());
+            AccountState.SetSelectedAccount(null);
+            Navigation.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+        catch (Exception ex)
+        {
+            _accountLoadError = ex.Message;
+            AccountState.SetAccounts(Array.Empty<Account>());
+        }
+        finally
+        {
+            _isLoadingAccounts = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void HandleAccountStateChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private Task OnAccountChanged(int? accountId)
@@ -208,5 +256,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= HandleLocationChanged;
+        AccountState.OnChange -= HandleAccountStateChanged;
     }
 }
