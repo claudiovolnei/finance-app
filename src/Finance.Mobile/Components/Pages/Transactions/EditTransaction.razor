@@ -10,7 +10,7 @@
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4 management-page transfer-form-page">
     <MudStack Spacing="1" Class="mb-2">
         <MudText Typo="Typo.h5" Class="list-page-title">Editar lançamento</MudText>
-        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">Você pode ajustar lançamentos na conta selecionada ou em cartões vinculados.</MudText>
+        <MudText Typo="Typo.body2" Class="transfer-form-subtitle">@GetFormSubtitle()</MudText>
     </MudStack>
 
     @if (_loading)
@@ -66,6 +66,10 @@
                                     <MudSelectItem Value="@option.Id">@option.Name</MudSelectItem>
                                 }
                             </MudSelect>
+                            @if (!HasLinkedCreditCards)
+                            {
+                                <MudText Typo="Typo.caption" Class="mud-text-secondary mt-1 d-block">Nenhum cartão vinculado cadastrado. A edição será aplicada apenas na conta corrente selecionada.</MudText>
+                            }
                         </MudItem>
                         <MudItem xs="12" sm="6">
                             <MudSelect T="TransactionType" Label="Tipo" Value="_type" ValueChanged="OnTypeChanged" Variant="Variant.Outlined" Required="true" Disabled="@IsCreditCardPosting">
@@ -159,6 +163,7 @@
     private int _categoryAutocompleteKey;
 
     private bool IsCreditCardPosting => _postingAccountOptions.FirstOrDefault(a => a.Id == _postingAccountId)?.Type == AccountType.CreditCard;
+    private bool HasLinkedCreditCards => _postingAccountOptions.Any(a => a.Type == AccountType.CreditCard);
 
     protected override async Task OnInitializedAsync()
     {
@@ -317,7 +322,15 @@
         }
     }
 
-    private string GetPostingDescription() => IsCreditCardPosting ? "Despesa lançada em cartão vinculado" : "Receita/Despesa na conta corrente";
+    private string GetPostingDescription() => IsCreditCardPosting
+        ? "Despesa lançada em cartão vinculado"
+        : HasLinkedCreditCards
+            ? "Receita/Despesa na conta corrente"
+            : "Receita/Despesa na conta corrente (sem cartões vinculados)";
+
+    private string GetFormSubtitle() => HasLinkedCreditCards
+        ? "Você pode ajustar lançamentos na conta selecionada ou em cartões vinculados."
+        : "Nenhum cartão vinculado foi cadastrado. A edição será aplicada somente na conta corrente selecionada.";
     private void Cancelar() => Navigation.NavigateTo("/transactions");
 
     private void FormatAmount(FocusEventArgs _)

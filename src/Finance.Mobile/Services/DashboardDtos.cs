@@ -22,4 +22,4 @@ public record TransactionSummaryDto(
     string TransactionAccountName);
 public record CategoryExpenseDetailDto(int CategoryId, string CategoryName, decimal TotalExpense, List<TransactionSummaryDto> Transactions);
 public record CategoryTransactionsDetailDto(int? CategoryId, string Title, decimal TotalAmount, TransactionType Type, List<TransactionSummaryDto> Transactions);
-public record DashboardSummaryDto(decimal Balance, decimal TotalIncome, decimal TotalExpense, decimal TotalCreditCardDebt, List<CategorySummaryDto> Categories, List<CreditCardExpenseSummaryDto> CreditCardExpenses, List<TransactionSummaryDto> LatestTransactions);
+public record DashboardSummaryDto(decimal Balance, decimal TotalIncome, decimal TotalExpense, decimal TotalCreditCardDebt, int TotalCreditCardAccounts, List<CategorySummaryDto> Categories, List<CreditCardExpenseSummaryDto> CreditCardExpenses, List<TransactionSummaryDto> LatestTransactions);

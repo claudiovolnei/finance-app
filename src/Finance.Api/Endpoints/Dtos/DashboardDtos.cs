@@ -32,6 +32,7 @@ public record DashboardSummaryDto(
     decimal TotalIncome,
     decimal TotalExpense,
     decimal TotalCreditCardDebt,
+    int TotalCreditCardAccounts,
     List<CategorySummaryDto> Categories,
     List<CreditCardExpenseSummaryDto> CreditCardExpenses,
     List<TransactionSummaryDto> LatestTransactions);
