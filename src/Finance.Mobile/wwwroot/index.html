@@ -26,10 +26,27 @@
             </div>
         </div>
     </div>
-    <div id="blazor-error-ui" data-nosnippet>
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+    <div id="blazor-error-ui" data-nosnippet role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="error-card">
+            <div class="error-header">
+                <strong>O app encontrou um erro.</strong>
+                <button type="button" class="dismiss" aria-label="Fechar aviso de erro">🗙</button>
+            </div>
+
+            <p class="error-summary">
+                Abra os detalhes para facilitar a identificação da causa.
+            </p>
+
+            <details class="error-details" open>
+                <summary>Ver detalhes técnicos</summary>
+                <pre id="blazor-error-details" class="error-stack"></pre>
+            </details>
+
+            <div class="error-actions">
+                <button type="button" id="blazor-copy-error" class="copy">Copiar erro</button>
+                <a href="." class="reload">Recarregar app</a>
+            </div>
+        </div>
     </div>
     <!-- Para BlazorWebView (MAUI), o host chama Blazor.start().
          Por isso o autostart deve ser false. -->
@@ -37,14 +54,47 @@
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script>
         (function () {
+            var fallbackMessage = 'Ocorreu uma falha inesperada sem detalhes técnicos.';
+
             function showError(msg) {
                 try {
                     var el = document.getElementById('blazor-error-ui');
+                    var details = document.getElementById('blazor-error-details');
                     if (!el) return;
                     el.style.display = 'block';
-                    el.textContent = msg;
+                    if (details) details.textContent = msg || fallbackMessage;
                 } catch (e) {
                     console.error(e);
+                }
+            }
+
+            function bindErrorUiActions() {
+                var dismissBtn = document.querySelector('#blazor-error-ui .dismiss');
+                if (dismissBtn) {
+                    dismissBtn.addEventListener('click', function () {
+                        var el = document.getElementById('blazor-error-ui');
+                        if (el) el.style.display = 'none';
+                    });
+                }
+
+                var copyBtn = document.getElementById('blazor-copy-error');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', async function () {
+                        var details = document.getElementById('blazor-error-details');
+                        var text = details && details.textContent ? details.textContent : fallbackMessage;
+
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            copyBtn.textContent = 'Erro copiado!';
+                        } catch (e) {
+                            console.error('Falha ao copiar erro', e);
+                            copyBtn.textContent = 'Não foi possível copiar';
+                        }
+
+                        window.setTimeout(function () {
+                            copyBtn.textContent = 'Copiar erro';
+                        }, 2000);
+                    });
                 }
             }
 
@@ -65,6 +115,7 @@
 
             // Also expose a helper for .NET to write errors explicitly
             window.__showBlazorError = showError;
+            bindErrorUiActions();
         })();
     </script>
 </body>
