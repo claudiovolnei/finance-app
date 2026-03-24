@@ -1,5 +1,31 @@
+@inject NavigationManager Navigation
+
 <Router AppAssembly="typeof(MauiProgram).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <ErrorBoundary @ref="_routeErrorBoundary">
+            <ChildContent>
+                <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            </ChildContent>
+            <ErrorContent Context="exception">
+                <LayoutView Layout="typeof(Layout.MainLayout)">
+                    <div class="route-error-panel">
+                        <h3>Ocorreu um erro ao carregar esta tela.</h3>
+                        <p>Copie os detalhes abaixo para facilitar o diagnóstico.</p>
+                        <pre>@exception.ToString()</pre>
+                        <button class="route-error-retry" @onclick="RecoverApp">Tentar novamente</button>
+                    </div>
+                </LayoutView>
+            </ErrorContent>
+        </ErrorBoundary>
     </Found>
 </Router>
+
+@code {
+    private ErrorBoundary? _routeErrorBoundary;
+
+    private void RecoverApp()
+    {
+        _routeErrorBoundary?.Recover();
+        Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+    }
+}

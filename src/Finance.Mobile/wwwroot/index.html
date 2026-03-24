@@ -39,7 +39,7 @@
 
             <details class="error-details" open>
                 <summary>Ver detalhes técnicos</summary>
-                <pre id="blazor-error-details" class="error-stack"></pre>
+                <pre id="blazor-error-details" class="error-stack">Aguardando detalhes do erro...</pre>
             </details>
 
             <div class="error-actions">
@@ -56,13 +56,25 @@
         (function () {
             var fallbackMessage = 'Ocorreu uma falha inesperada sem detalhes técnicos.';
 
+            function toErrorText(input) {
+                if (!input) return fallbackMessage;
+                if (typeof input === 'string') return input;
+                if (input instanceof Error) return (input.stack || input.message || String(input));
+
+                try {
+                    return JSON.stringify(input, null, 2);
+                } catch (e) {
+                    return String(input);
+                }
+            }
+
             function showError(msg) {
                 try {
                     var el = document.getElementById('blazor-error-ui');
                     var details = document.getElementById('blazor-error-details');
                     if (!el) return;
                     el.style.display = 'block';
-                    if (details) details.textContent = msg || fallbackMessage;
+                    if (details) details.textContent = toErrorText(msg);
                 } catch (e) {
                     console.error(e);
                 }
@@ -99,17 +111,15 @@
             }
 
             window.addEventListener('error', function (e) {
-                var message = (e && e.message) ? e.message : String(e);
-                var stack = (e && e.error && e.error.stack) ? '\n' + e.error.stack : '';
-                showError('Error: ' + message + stack);
+                var message = (e && e.message) ? e.message : '';
+                var details = (e && e.error) ? e.error : message || e;
+                showError(details);
                 console.error(e.error || e);
             });
 
             window.addEventListener('unhandledrejection', function (e) {
                 var reason = e && e.reason ? e.reason : e;
-                var message = (reason && reason.message) ? reason.message : JSON.stringify(reason);
-                var stack = (reason && reason.stack) ? '\n' + reason.stack : '';
-                showError('Unhandled Promise Rejection: ' + message + stack);
+                showError(reason);
                 console.error(e);
             });
 
