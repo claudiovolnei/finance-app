@@ -51,7 +51,7 @@
 
             @if (_incomeTransactions.Any())
             {
-                <MudText Typo="Typo.subtitle2" Class="transaction-group-title transaction-group-title-income mb-1">Créditos</MudText>
+                <MudText Typo="Typo.subtitle1" Class="transaction-group-title transaction-group-title-income mb-1">Créditos</MudText>
                 <MudList T="TransactionDto" Dense="true" Class="pa-0 mb-3">
                     @foreach (var tx in _incomeTransactions)
                     {
@@ -62,7 +62,7 @@
 
             @if (_expenseTransactions.Any())
             {
-                <MudText Typo="Typo.subtitle2" Class="transaction-group-title transaction-group-title-expense mb-1">Débitos</MudText>
+                <MudText Typo="Typo.subtitle1" Class="transaction-group-title transaction-group-title-expense mb-1">Débitos</MudText>
                 <MudList T="TransactionDto" Dense="true" Class="pa-0">
                     @foreach (var tx in _expenseTransactions)
                     {
