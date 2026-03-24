@@ -3,9 +3,20 @@
 @using Finance.Mobile.Components.Charts
 @using Finance.Mobile.Services
 @using Finance.Domain.Entities
+@inject IJSRuntime JS
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-4">
     <MonthYearNavigator CurrentLabel="@GetCurrentFilterLabel()" OnPrevious="PrevMonth" OnNext="NextMonth" />
+    @if (!string.IsNullOrWhiteSpace(_loadError))
+    {
+        <MudAlert Severity="Severity.Error" Dense="true" Class="mb-3">
+            <strong>Erro ao carregar a Home.</strong>
+            <details class="home-error-details">
+                <summary>Ver detalhes técnicos</summary>
+                <pre>@_loadError</pre>
+            </details>
+        </MudAlert>
+    }
     <MudGrid GutterSize="GutterSize.Small" AlignItems="Center">
         <MudItem xs="12" sm="6" md="4">
             <MudPaper Class="pa-4 card-center" Elevation="1">
@@ -256,6 +267,7 @@
     private TransactionSummaryDto? _selectedTransaction;
     private bool _isTransactionDialogOpen;
     private bool _isTransactionPanelVisible;
+    private string? _loadError;
     private const int TransactionPanelAnimationMs = 260;
 
     protected override async Task OnInitializedAsync()
@@ -318,6 +330,7 @@
     {
         try
         {
+            _loadError = null;
             var dto = await Api.GetDashboardSummaryAsync(_filterYear, _filterMonth, AccountState.SelectedAccountId);
             if (dto == null)
             {
@@ -341,9 +354,11 @@
             _latestExpenseTransactions = dto.LatestTransactions.Where(t => t.Type == TransactionType.Expense).OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).ToList();
             await InvokeAsync(StateHasChanged);
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore
+            _loadError = ex.ToString();
+            await JS.InvokeVoidAsync("__showBlazorError", _loadError);
+            await InvokeAsync(StateHasChanged);
         }
     }
 

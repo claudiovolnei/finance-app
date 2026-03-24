@@ -176,6 +176,24 @@ body {
     padding: 0.35rem 0.75rem;
 }
 
+.home-error-details {
+    margin-top: 0.5rem;
+}
+
+.home-error-details pre {
+    background: #fff;
+    border: 1px solid #f0d8b4;
+    border-radius: 6px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.75rem;
+    margin-top: 0.35rem;
+    max-height: 24vh;
+    overflow: auto;
+    padding: 0.6rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 #blazor-error-ui {
     align-items: flex-end;
     backdrop-filter: blur(2px);

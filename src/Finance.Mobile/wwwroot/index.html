@@ -55,6 +55,8 @@
     <script>
         (function () {
             var fallbackMessage = 'Ocorreu uma falha inesperada sem detalhes técnicos.';
+            var waitingMessage = 'Aguardando detalhes do erro...';
+            var recentConsoleErrors = [];
 
             function toErrorText(input) {
                 if (!input) return fallbackMessage;
@@ -78,6 +80,60 @@
                 } catch (e) {
                     console.error(e);
                 }
+            }
+
+            function captureConsoleError() {
+                var originalConsoleError = console.error;
+                console.error = function () {
+                    try {
+                        var args = Array.prototype.slice.call(arguments || []);
+                        if (args.length > 0) {
+                            var normalized = args
+                                .map(function (arg) { return toErrorText(arg); })
+                                .filter(function (text) { return !!text; })
+                                .join('\n\n');
+
+                            if (normalized) {
+                                recentConsoleErrors.push(normalized);
+                                if (recentConsoleErrors.length > 5) recentConsoleErrors.shift();
+                            }
+                        }
+                    } catch (_ignored) {
+                    }
+
+                    originalConsoleError.apply(console, arguments);
+                };
+            }
+
+            function fillDetailsFromConsoleIfNeeded() {
+                var details = document.getElementById('blazor-error-details');
+                if (!details) return;
+
+                var currentText = (details.textContent || '').trim();
+                if (currentText && currentText !== waitingMessage) return;
+
+                if (recentConsoleErrors.length > 0) {
+                    details.textContent = recentConsoleErrors.join('\n\n----------------\n\n');
+                    return;
+                }
+
+                details.textContent =
+                    'Sem stack no evento de erro global. Verifique os logs do app/Visual Studio para mais detalhes.';
+            }
+
+            function observeBlazorErrorVisibility() {
+                var errorUi = document.getElementById('blazor-error-ui');
+                if (!errorUi) return;
+
+                var observer = new MutationObserver(function () {
+                    var isVisible = window.getComputedStyle(errorUi).display !== 'none';
+                    if (isVisible) fillDetailsFromConsoleIfNeeded();
+                });
+
+                observer.observe(errorUi, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
             }
 
             function bindErrorUiActions() {
@@ -126,6 +182,8 @@
             // Also expose a helper for .NET to write errors explicitly
             window.__showBlazorError = showError;
             bindErrorUiActions();
+            captureConsoleError();
+            observeBlazorErrorVisibility();
         })();
     </script>
 </body>
