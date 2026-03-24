@@ -28,7 +28,7 @@
         <MudGrid GutterSize="GutterSize.Small">
             <MudItem xs="12" md="6">
                 <MudPaper Class="pa-4" Elevation="1">
-                    <MudText Typo="Typo.subtitle2" Class="mb-3">Contas correntes</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Contas correntes</MudText>
                     @if (!CheckingAccounts.Any())
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">Nenhuma conta corrente cadastrada.</MudAlert>
@@ -46,7 +46,7 @@
             </MudItem>
             <MudItem xs="12" md="6">
                 <MudPaper Class="pa-4" Elevation="1">
-                    <MudText Typo="Typo.subtitle2" Class="mb-3">Cartões de crédito</MudText>
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Cartões de crédito</MudText>
                     @if (!CreditCardAccounts.Any())
                     {
                         <MudAlert Severity="Severity.Info" Dense="true">Nenhum cartão cadastrado.</MudAlert>

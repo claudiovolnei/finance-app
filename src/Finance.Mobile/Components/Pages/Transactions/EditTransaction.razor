@@ -26,7 +26,7 @@
         <MudPaper Elevation="0" Class="transfer-mode-card mb-4">
             <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                 <MudStack Spacing="0">
-                    <MudText Typo="Typo.subtitle2">Modo do lançamento</MudText>
+                    <MudText Typo="Typo.subtitle1">Modo do lançamento</MudText>
                     <MudText Typo="Typo.caption" Class="mud-text-secondary">@(_isTransfer ? "Transferência entre contas correntes" : GetPostingDescription())</MudText>
                 </MudStack>
                 <MudSwitch T="bool" @bind-Value="_isTransfer" Color="Color.Primary" Label="Transferência" />
