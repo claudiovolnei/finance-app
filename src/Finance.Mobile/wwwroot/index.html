@@ -26,10 +26,27 @@
             </div>
         </div>
     </div>
-    <div id="blazor-error-ui" data-nosnippet>
-        An unhandled error has occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+    <div id="blazor-error-ui" data-nosnippet role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="error-card">
+            <div class="error-header">
+                <strong>O app encontrou um erro.</strong>
+                <button type="button" class="dismiss" aria-label="Fechar aviso de erro">🗙</button>
+            </div>
+
+            <p class="error-summary">
+                Abra os detalhes para facilitar a identificação da causa.
+            </p>
+
+            <details class="error-details" open>
+                <summary>Ver detalhes técnicos</summary>
+                <pre id="blazor-error-details" class="error-stack">Aguardando detalhes do erro...</pre>
+            </details>
+
+            <div class="error-actions">
+                <button type="button" id="blazor-copy-error" class="copy">Copiar erro</button>
+                <a href="." class="reload">Recarregar app</a>
+            </div>
+        </div>
     </div>
     <!-- Para BlazorWebView (MAUI), o host chama Blazor.start().
          Por isso o autostart deve ser false. -->
@@ -37,34 +54,136 @@
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script>
         (function () {
+            var fallbackMessage = 'Ocorreu uma falha inesperada sem detalhes técnicos.';
+            var waitingMessage = 'Aguardando detalhes do erro...';
+            var recentConsoleErrors = [];
+
+            function toErrorText(input) {
+                if (!input) return fallbackMessage;
+                if (typeof input === 'string') return input;
+                if (input instanceof Error) return (input.stack || input.message || String(input));
+
+                try {
+                    return JSON.stringify(input, null, 2);
+                } catch (e) {
+                    return String(input);
+                }
+            }
+
             function showError(msg) {
                 try {
                     var el = document.getElementById('blazor-error-ui');
+                    var details = document.getElementById('blazor-error-details');
                     if (!el) return;
                     el.style.display = 'block';
-                    el.textContent = msg;
+                    if (details) details.textContent = toErrorText(msg);
                 } catch (e) {
                     console.error(e);
                 }
             }
 
+            function captureConsoleError() {
+                var originalConsoleError = console.error;
+                console.error = function () {
+                    try {
+                        var args = Array.prototype.slice.call(arguments || []);
+                        if (args.length > 0) {
+                            var normalized = args
+                                .map(function (arg) { return toErrorText(arg); })
+                                .filter(function (text) { return !!text; })
+                                .join('\n\n');
+
+                            if (normalized) {
+                                recentConsoleErrors.push(normalized);
+                                if (recentConsoleErrors.length > 5) recentConsoleErrors.shift();
+                            }
+                        }
+                    } catch (_ignored) {
+                    }
+
+                    originalConsoleError.apply(console, arguments);
+                };
+            }
+
+            function fillDetailsFromConsoleIfNeeded() {
+                var details = document.getElementById('blazor-error-details');
+                if (!details) return;
+
+                var currentText = (details.textContent || '').trim();
+                if (currentText && currentText !== waitingMessage) return;
+
+                if (recentConsoleErrors.length > 0) {
+                    details.textContent = recentConsoleErrors.join('\n\n----------------\n\n');
+                    return;
+                }
+
+                details.textContent =
+                    'Sem stack no evento de erro global. Verifique os logs do app/Visual Studio para mais detalhes.';
+            }
+
+            function observeBlazorErrorVisibility() {
+                var errorUi = document.getElementById('blazor-error-ui');
+                if (!errorUi) return;
+
+                var observer = new MutationObserver(function () {
+                    var isVisible = window.getComputedStyle(errorUi).display !== 'none';
+                    if (isVisible) fillDetailsFromConsoleIfNeeded();
+                });
+
+                observer.observe(errorUi, {
+                    attributes: true,
+                    attributeFilter: ['style', 'class']
+                });
+            }
+
+            function bindErrorUiActions() {
+                var dismissBtn = document.querySelector('#blazor-error-ui .dismiss');
+                if (dismissBtn) {
+                    dismissBtn.addEventListener('click', function () {
+                        var el = document.getElementById('blazor-error-ui');
+                        if (el) el.style.display = 'none';
+                    });
+                }
+
+                var copyBtn = document.getElementById('blazor-copy-error');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', async function () {
+                        var details = document.getElementById('blazor-error-details');
+                        var text = details && details.textContent ? details.textContent : fallbackMessage;
+
+                        try {
+                            await navigator.clipboard.writeText(text);
+                            copyBtn.textContent = 'Erro copiado!';
+                        } catch (e) {
+                            console.error('Falha ao copiar erro', e);
+                            copyBtn.textContent = 'Não foi possível copiar';
+                        }
+
+                        window.setTimeout(function () {
+                            copyBtn.textContent = 'Copiar erro';
+                        }, 2000);
+                    });
+                }
+            }
+
             window.addEventListener('error', function (e) {
-                var message = (e && e.message) ? e.message : String(e);
-                var stack = (e && e.error && e.error.stack) ? '\n' + e.error.stack : '';
-                showError('Error: ' + message + stack);
+                var message = (e && e.message) ? e.message : '';
+                var details = (e && e.error) ? e.error : message || e;
+                showError(details);
                 console.error(e.error || e);
             });
 
             window.addEventListener('unhandledrejection', function (e) {
                 var reason = e && e.reason ? e.reason : e;
-                var message = (reason && reason.message) ? reason.message : JSON.stringify(reason);
-                var stack = (reason && reason.stack) ? '\n' + reason.stack : '';
-                showError('Unhandled Promise Rejection: ' + message + stack);
+                showError(reason);
                 console.error(e);
             });
 
             // Also expose a helper for .NET to write errors explicitly
             window.__showBlazorError = showError;
+            bindErrorUiActions();
+            captureConsoleError();
+            observeBlazorErrorVisibility();
         })();
     </script>
 </body>
